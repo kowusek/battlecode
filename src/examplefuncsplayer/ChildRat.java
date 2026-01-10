@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class ChildRat extends Rat {
 
-    static final Random rng = new Random(6147);
+    static final Random rng = new Random();
     static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
@@ -47,13 +47,15 @@ public class ChildRat extends Rat {
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
 
-        if (mineLocation != null) {
+        if (mineLocation != null && rc.getLocation().distanceSquaredTo(mineLocation) > 5) {
             target = mineLocation;
+        } else if (target == mineLocation) {
+            target = null; // Clear mine location if we're close enough
         }
-        MapLocation runLocation = runAwayFromOtherRats(rc);
-        if (runLocation != null) {
-            target = runLocation;
-        }
+        // MapLocation runLocation = runAwayFromOtherRats(rc);
+        // if (runLocation != null) {
+        // target = runLocation;
+        // }
         MapLocation cheeseLocation = findNearestCheese(rc);
         if (cheeseLocation != null) {
             target = cheeseLocation;
@@ -61,9 +63,9 @@ public class ChildRat extends Rat {
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
         }
-        // if (target == null) {
-        //     target = runToRandomLocation(rc);
-        // }
+        if (target == null) {
+            target = runToRandomLocation(rc);
+        }
         return target;
     }
 
