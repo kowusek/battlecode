@@ -19,6 +19,7 @@ public class Bug2Navigator {
     private MapLocation startLoc = null;
     private MapLocation targetLoc = null;
     private Direction wallDir = Direction.CENTER;
+    private MapLocation wallPosition = null;
 
     public Action nextAction(RobotController rc, MapLocation current, MapLocation goal, boolean deleteDirt) throws GameActionException {
 
@@ -26,6 +27,14 @@ public class Bug2Navigator {
             reset();
             targetLoc = goal;
             startLoc = current;
+        }
+        if (followingWall) {
+            if (rc.canMove(rc.getLocation().directionTo(wallPosition))) {
+                //System.out.println("reset because wall disappeared");
+                reset();
+                targetLoc = goal;
+                startLoc = current;
+            }
         }
         // We are at the destination
         if (current.distanceSquaredTo(goal) == 0){
@@ -62,12 +71,13 @@ public class Bug2Navigator {
             followingWall = true;
             hitDist = current.distanceSquaredTo(targetLoc);
             wallDir = directionToTarget;
+            wallPosition = rc.getLocation().add(directionToTarget);
             //System.out.println("!followingWall");
             return new Action(Action.ActionType.MOVE, followWall(rc));
         }
         // Bug2 exit condition: back on M-line closer to goal
-        System.out.println("current.distanceSquaredTo(targetLoc) " + current.distanceSquaredTo(targetLoc));
-        System.out.println("hitDist " + hitDist);
+        //System.out.println("current.distanceSquaredTo(targetLoc) " + current.distanceSquaredTo(targetLoc));
+        //System.out.println("hitDist " + hitDist);
         if (onMLine(startLoc, targetLoc, current)
                 && current.distanceSquaredTo(targetLoc) <= hitDist
                 && rc.canMove(directionToTarget)) {
@@ -78,10 +88,10 @@ public class Bug2Navigator {
         // following wall
         Direction move = followWall(rc);
         if (move == Direction.CENTER){
-            System.out.println("move == Direction.CENTER");
+            //System.out.println("move == Direction.CENTER");
             return new Action(Action.ActionType.TURN, rc.getDirection().rotateLeft());
         }
-        System.out.println("Action.ActionType.MOVE, mova " + move);
+        //System.out.println("Action.ActionType.MOVE, mova " + move);
         return new Action(Action.ActionType.MOVE, move);
     }
 
@@ -91,6 +101,8 @@ public class Bug2Navigator {
         for (int i = 0; i < 8; i++) {
             if (rc.canMove(d)) {
                 wallDir = d.rotateRight(); // keep wall on right
+                wallPosition = rc.getLocation().add(wallDir);
+                //System.out.println("followWall " + wallDir);
                 return d;
             }
             d = d.rotateLeft();
@@ -101,8 +113,8 @@ public class Bug2Navigator {
 
     // ===== M-line Check =====
     private boolean onMLine(MapLocation start, MapLocation goal, MapLocation cur) {
-        System.out.println("start goal, cur");
-        System.out.println(start + " " + goal + " " + cur);
+        //System.out.println("start goal, cur");
+        //System.out.println(start + " " + goal + " " + cur);
         int dx1 = goal.x - start.x;
         int dy1 = goal.y - start.y;
         int dx2 = cur.x - start.x;
@@ -134,7 +146,7 @@ public class Bug2Navigator {
         for (Direction dir : directions) {
             MapLocation loc = rc.getLocation().add(dir);
             if (loc.x < 0 || loc.y < 0 || loc.x >= rc.getMapWidth() || loc.y >= rc.getMapHeight()) continue;
-            System.out.println("loc" + loc);
+            //System.out.println("loc" + loc);
             if (rc.senseMapInfo(loc).isDirt()) return dir;
         }
         return Direction.CENTER;
@@ -145,5 +157,6 @@ public class Bug2Navigator {
         hitDist = 0;
         startLoc = null;
         wallDir = Direction.CENTER;
+        wallPosition = null;
     }
 }

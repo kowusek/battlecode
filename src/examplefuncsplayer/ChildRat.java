@@ -44,8 +44,7 @@ public class ChildRat extends Rat{
         MapLocation loc1 = new MapLocation(0, 0);
         MapLocation loc2 = new MapLocation(57, 25);
         // Randomly pick one
-        Random rand = new Random();
-        MapLocation targetLocation = (rand.nextBoolean()) ? loc1 : loc2;
+        MapLocation targetLocation = (rc.getID() % 2 == 0) ? loc1 : loc2;
         Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
         System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
