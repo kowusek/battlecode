@@ -1,7 +1,6 @@
 package examplefuncsplayer;
 
 import battlecode.common.*;
-import examplefuncsplayertest.RobotPlayer;
 
 public class ChildRat extends Rat{
     public static enum ChildRatState {
@@ -41,7 +40,7 @@ public class ChildRat extends Rat{
     private void goToLocation(RobotController rc) throws GameActionException {
         MapLocation targetLocation = new MapLocation(0, 0);
         Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation);
-        //System.out.println("action " + action.type + " " + action.dir);
+        System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
             case MOVE:
                 if (rc.canMove(action.dir)) {
@@ -59,7 +58,7 @@ public class ChildRat extends Rat{
                     rc.removeDirt(rc.getLocation().add(action.dir));
                 }
                 break;
-            case NONE:
+            case WAIT:
                 // do nothing
                 break;
         }

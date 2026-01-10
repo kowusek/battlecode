@@ -1,14 +1,15 @@
 package examplefuncsplayer;
 
 import battlecode.common.*;
-import java.util.LinkedList;
+
+import java.lang.reflect.Type;
 
 public class Bug2Navigator {
 
     private boolean followingWall = false;
     private int hitDist = 0;
     public static class Action {
-        public enum ActionType { MOVE, TURN, DELETE_DIRT, NONE }
+        public enum ActionType { MOVE, TURN, DELETE_DIRT, WAIT, OCCUPIED }
         public final ActionType type;
         public final Direction dir;
 
@@ -18,77 +19,65 @@ public class Bug2Navigator {
         }
     }
     private MapLocation startLoc = null;
-    private MapLocation goalLoc = null;
+    private MapLocation targetLoc = null;
     private Direction wallDir = Direction.CENTER;
-    private MapLocation lastVisitedLocation = null;
-    // Keep track of visited locations while wall-following to detect loops
-    private final LinkedList<MapLocation> visitedLocations = new LinkedList<>();
-    private static final int MAX_VISITED_HISTORY = 50;
 
-    // ===== Main Entry =====
     public Action nextAction(RobotController rc, MapLocation current, MapLocation goal) throws GameActionException {
 
-        // Reset if new goal
-        if (!goal.equals(goalLoc)) {
+        if (!goal.equals(targetLoc) || startLoc == null) {
             reset();
-            goalLoc = goal;
+            targetLoc = goal;
             startLoc = current;
-            lastVisitedLocation = null;
         }
-        Direction toGoal = current.directionTo(goal);
-        if (toGoal == Direction.CENTER){
-            System.out.println("toGoal == Direction.CENTER");
-            return new Action(Action.ActionType.NONE, Direction.CENTER);
+        if (!rc.isMovementReady() || !rc.isTurningReady() || !rc.isActionReady()){
+            System.out.println("!rc.isMovementReady() || !rc.isTurningReady() || !rc.isActionReady()");
+            return new Action(Action.ActionType.WAIT, Direction.CENTER);
         }
-        // ===== Check for dirt in all surrounding tiles first =====
-        //Direction dirtDir = findAnyRemovableDirt(rc);
-        if(rc.canRemoveDirt(rc.getLocation().add(rc.getDirection()))){
-            return new Action(Action.ActionType.DELETE_DIRT, rc.getDirection());
-        }
-//        if (dirtDir != Direction.CENTER) {
-//            // Remove dirt to unblock path
-//            return new Action(Action.ActionType.DELETE_DIRT, dirtDir);
-//        }
-        // ===== Direct move toward goal =====
-        if (!followingWall && rc.canMove(toGoal)) {
-            return new Action(Action.ActionType.MOVE, toGoal);
+        // Direction to goal
+        Direction directionToTarget = current.directionTo(goal);
+        System.out.println("directionToTarget " + directionToTarget);
+        // We are at the destination
+        if (current.distanceSquaredTo(goal) == 0){
+            System.out.println("current.distanceSquaredTo(goal) == 0");
+            return new Action(Action.ActionType.WAIT, Direction.CENTER);
         }
 
-        // ===== Not following wall yet? Start wall-following =====
+        Direction dirtDirection = findAnyRemovableDirt(rc);
+        if (dirtDirection != Direction.CENTER){
+            System.out.println("dirtDirection " + dirtDirection);
+            if (rc.getGlobalCheese() > 200 && rc.isActionReady()){
+                reset();
+                return new Action(Action.ActionType.DELETE_DIRT, dirtDirection);
+            }
+            else if(!rc.isActionReady()){
+                return new Action(Action.ActionType.WAIT, Direction.CENTER);
+            }
+        }
+        // move towards goal
+        if (!followingWall && rc.canMove(directionToTarget)) {
+            System.out.println("!followingWall && rc.canMove(directionToTarget)");
+            return new Action(Action.ActionType.MOVE, directionToTarget);
+        }
+        // start wall-following
         if (!followingWall) {
             followingWall = true;
-            hitDist = current.distanceSquaredTo(goal);
-            wallDir = toGoal.rotateRight();
-            visitedLocations.clear();
-            visitedLocations.add(current);
+            hitDist = current.distanceSquaredTo(targetLoc);
+            wallDir = directionToTarget;
+            System.out.println("!followingWall");
             return new Action(Action.ActionType.MOVE, followWall(rc));
         }
-
-        // ===== FOLLOWING WALL =====
-        Direction move = followWall(rc);
-
-        // ===== Loop detection =====
-//        MapLocation nextLoc = current.add(move);
-//        if (visitedLocations.contains(nextLoc)) {
-//            // We are about to revisit a location → try removing any dirt around
-//            Direction escapeDirt = findAnyRemovableDirt(rc, current);
-//            if (escapeDirt != Direction.CENTER) return escapeDirt;
-//        }
-
-        // Record current location
-        //visitedLocations.add(current);
-        //if (visitedLocations.size() > MAX_VISITED_HISTORY) visitedLocations.removeFirst();
-
-        // ===== Bug2 exit condition: back on M-line closer to goal =====
-        if (onMLine(startLoc, goal, current)
-                && current.distanceSquaredTo(goal) < hitDist
-                && rc.canMove(toGoal)) {
-
+        // Bug2 exit condition: back on M-line closer to goal
+        if (onMLine(startLoc, targetLoc, current)
+                && current.distanceSquaredTo(targetLoc) <= hitDist
+                && rc.canMove(directionToTarget)) {
             followingWall = false;
-            //visitedLocations.clear();
-            return new Action(Action.ActionType.MOVE, toGoal);
+            System.out.println("onMLine(startLoc, goal, current)");
+            return new Action(Action.ActionType.MOVE, directionToTarget);
         }
+        // following wall
+        Direction move = followWall(rc);
         if (move == Direction.CENTER){
+            System.out.println("move == Direction.CENTER");
             return new Action(Action.ActionType.TURN, rc.getDirection().rotateLeft());
         }
         return new Action(Action.ActionType.MOVE, move);
@@ -97,7 +86,7 @@ public class Bug2Navigator {
     // ===== Wall Following =====
     private Direction followWall(RobotController rc) {
         Direction d = wallDir;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 8; i++) {
             if (rc.canMove(d)) {
                 wallDir = d.rotateRight(); // keep wall on right
                 return d;
@@ -106,6 +95,7 @@ public class Bug2Navigator {
         }
         return Direction.CENTER;
     }
+
 
     // ===== M-line Check =====
     private boolean onMLine(MapLocation start, MapLocation goal, MapLocation cur) {
@@ -117,22 +107,37 @@ public class Bug2Navigator {
         return Math.abs(cross) <= Math.max(Math.abs(dx1), Math.abs(dy1));
     }
 
-    private Direction findAnyRemovableDirt(RobotController rc) throws GameActionException {
-        for (Direction dir : Direction.values()) {
-            if (dir == Direction.CENTER) continue;
+    private Direction findAnyRemovableDirt(RobotController rc) {
+        Direction[] directions;
+        if (rc.getType() == UnitType.BABY_RAT){
+            directions = new Direction[]{
+                    rc.getDirection(),
+                    rc.getDirection().rotateLeft(),
+                    rc.getDirection().rotateRight()
+            };
+        }else{
+            directions = new Direction[]{
+                    rc.getDirection(),
+                    rc.getDirection().rotateLeft(),
+                    rc.getDirection().rotateLeft().rotateLeft(),
+                    rc.getDirection().rotateLeft().rotateLeft().rotateLeft(),
+                    rc.getDirection().rotateLeft().rotateLeft().rotateLeft().rotateLeft(),
+                    rc.getDirection().rotateRight(),
+                    rc.getDirection().rotateRight().rotateRight(),
+                    rc.getDirection().rotateRight().rotateRight().rotateRight()
+            };
+        }
+        for (Direction dir : directions) {
             MapLocation loc = rc.getLocation().add(dir);
-            if (!rc.onTheMap(loc)) continue;
             if (rc.canRemoveDirt(loc)) return dir;
         }
         return Direction.CENTER;
     }
-    // ===== Reset navigator =====
-    public void reset() {
+    // reset
+    private void reset() {
         followingWall = false;
         hitDist = 0;
         startLoc = null;
-        goalLoc = null;
         wallDir = Direction.CENTER;
-        visitedLocations.clear();
     }
 }
