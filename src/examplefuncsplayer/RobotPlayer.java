@@ -2,16 +2,8 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
-import java.util.EnumMap;
-import java.util.List;
-import java.util.PriorityQueue;
 import java.util.stream.Stream;
 
 
@@ -27,7 +19,7 @@ public class RobotPlayer {
      * these variables are static, in Battlecode they aren't actually shared between your robots.
      */
     static int turnCount = 0;
-
+    public static boolean notBuild = false;
     /**
      * A random number generator.
      * We will use this RNG to make some random moves. The Random class is provided by the java.util.Random
@@ -35,6 +27,7 @@ public class RobotPlayer {
      * we get the same sequence of numbers every time this code is run. This is very useful for debugging!
      */
     static final Random rng = new Random(6147);
+    static Bug2Navigator nav = new Bug2Navigator();
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
@@ -63,59 +56,42 @@ public class RobotPlayer {
 
         // You can also use indicators to save debug notes in replays.
         rc.setIndicatorString("Hello world!");
-
+        rc.getType();
         while (true) {
-            // This code runs during the entire lifespan of the robot, which is why it is in an infinite
-            // loop. If we ever leave this loop and return from run(), the robot dies! At the end of the
-            // loop, we call Clock.yield(), signifying that we've done everything we want to do.
-
             turnCount += 1;  // We have now been alive for one more turn!
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode.
-            try {
-                // The same run() function is called for every robot on your team, even if they are
-                // different types. Here, we separate the control depending on the UnitType, so we can
-                // use different strategies on different robots. If you wish, you are free to rewrite
-                // this into a different control structure!
-
-                // Every 10 turns, print out what type of robot we are.
-                if (turnCount % 100 == 0) {
-                    System.out.println("Turn " + turnCount + ": I am a " + rc.getType().toString());
+            if (rc.getType() == UnitType.RAT_KING) {
+                MapLocation buildLocation = rc.getLocation().add(Direction.NORTH).add(Direction.NORTH);
+                //System.out.println("outside " + buildLocation + " "+ rc.canBuildRat(buildLocation) );
+                if (!notBuild && rc.canBuildRat(buildLocation)) {
+                    //System.out.println("inside");
+                    rc.buildRat(buildLocation);
+                    notBuild = true;
                 }
-
-                // Try to move forward one step.
-                if (rc.canMoveForward()) {
-                    System.out.println("Turn " + turnCount + ": Trying to move " + rc.getDirection());
-                    rc.moveForward();
-                } else {
-                    System.out.println("Couldn't move forward on turn " + turnCount + " at location " + rc.getLocation() + " facing " + rc.getDirection());
-                    // If we can't move forward, try to turn a random direction.
-                    int randomDirection = rng.nextInt(8);
-                    Direction dir = directions[randomDirection];
-
-                    if (rc.canTurn(dir)) {
-                        rc.turn(dir);
-                    }
-                }
-            } catch (GameActionException e) {
-                // Oh no! It looks like we did something illegal in the Battlecode world. You should
-                // handle GameActionExceptions judiciously, in case unexpected events occur in the game
-                // world. Remember, uncaught exceptions cause your robot to explode!
-                System.out.println("GameActionException");
-                e.printStackTrace();
-            } catch (Exception e) {
-                // Oh no! It looks like our code tried to do something bad. This isn't a
-                // GameActionException, so it's more likely to be a bug in our code.
-                System.out.println("Exception");
-                e.printStackTrace();
-            } finally {
-                // Signify we've done everything we want to do, thereby ending our turn.
-                // This will make our code wait until the next turn, and then perform this loop again.
                 Clock.yield();
+            } else {
+                runBabyRat(rc);
             }
-            // End of loop: go back to the top. Clock.yield() has ended, so it's time for another turn!
+        }
+    }
+    public static void runBabyRat(RobotController rc) throws GameActionException{
+        try {
+            MapLocation targetLocation = new MapLocation(0, 0);
+            Direction d = nav.nextMove(rc, rc.getLocation(), targetLocation);
+
+            if (d != Direction.CENTER && rc.canTurn(d) && rc.canMove(d)) {
+                rc.turn(d);
+                rc.moveForward();
+            }
+
+        }catch (GameActionException e) {
+            System.out.println("GameActionException");
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.out.println("Exception");
+            e.printStackTrace();
+        } finally {
+            Clock.yield();
         }
 
-        // Your code should never reach here (unless it's intentional)! Self-destruction imminent...
     }
 }
