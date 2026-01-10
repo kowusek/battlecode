@@ -5,11 +5,12 @@ import battlecode.common.*;
 public class KingRat extends Rat {
     protected static boolean notBuild = false;
     static MapLocation targetLocation = null;
+    static int mySharedArrayOffset = -1;
 
     @Override
     public void run(RobotController rc) {
         try {
-            writeLocationToSharedArray(rc, rc.getLocation(), 0);
+            writeLocationToSharedArray(rc, rc.getLocation());
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);
             if (targetLocation != null) {
@@ -35,10 +36,28 @@ public class KingRat extends Rat {
         }
     }
 
-    public void writeLocationToSharedArray(RobotController rc, MapLocation location, int offset)
+    public void writeLocationToSharedArray(RobotController rc, MapLocation location)
             throws GameActionException {
-        rc.writeSharedArray(offset, location.x);
-        rc.writeSharedArray(offset + 1, location.y);
+        // Find an empty slot if we don't have one yet
+        if (mySharedArrayOffset == -1) {
+            for (int i = 0; i < 5; i++) {
+                int offset = i * 2;
+                int x = rc.readSharedArray(offset);
+                System.out.print("Read 10th slot in shared mem: " + rc.readSharedArray(10));
+                int y = rc.readSharedArray(offset + 1);
+                // Empty slot found (uninitialized = 0,0)
+                if (x == 0 && y == 0) {
+                    mySharedArrayOffset = offset;
+                    break;
+                }
+            }
+        }
+        
+        // Write location to our reserved slot
+        if (mySharedArrayOffset != -1) {
+            rc.writeSharedArray(mySharedArrayOffset, location.x);
+            rc.writeSharedArray(mySharedArrayOffset + 1, location.y);
+        }
     }
 
     public MapLocation determineTargetLocation(RobotController rc) {
