@@ -12,17 +12,20 @@ public class ChildRat extends Rat {
 
     static final Random rng = new Random(6147);
     static MapLocation targetLocation = null;
+    MapLocation ratKingLocation = null;
     int[][] memoryMap = null;
     public static ChildRatState currentChildRatState = ChildRatState.INITIALIZE;
 
     @Override
     public void run(RobotController rc) {
         try {
+            ratKingLocation = findNearestRatKing(rc);
             if (memoryMap == null) {
                 initMemoryMap(rc);
             }
             updateMemoryMap(rc);
             // debugPrintMap(rc);
+            handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
             moveToTarget(rc, targetLocation);
 
@@ -38,6 +41,15 @@ public class ChildRat extends Rat {
 
     }
 
+    public void handleCheeseLogic(RobotController rc) throws GameActionException {
+        if (rc.canPickUpCheese(rc.getLocation())) {
+            rc.pickUpCheese(rc.getLocation());
+        }
+        if (ratKingLocation != null && rc.canTransferCheese(ratKingLocation, rc.getRawCheese())) {
+            rc.transferCheese(ratKingLocation, rc.getRawCheese());
+        }
+    }
+
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
 
@@ -51,8 +63,8 @@ public class ChildRat extends Rat {
             target = runLocation;
         }
 
-        if (target != null && !rc.canPickUpCheese(target)) {
-            target = runToRandomLocation(rc); // run to king
+        if (target != null && rc.getRawCheese() != 0) {
+            target = ratKingLocation;
         }
 
         if (target == null) {
@@ -68,6 +80,32 @@ public class ChildRat extends Rat {
         int randX = rng.nextInt(mapWidth);
         int randY = rng.nextInt(mapHeight);
         return new MapLocation(randX, randY);
+    }
+
+    public MapLocation findNearestRatKing(RobotController rc) throws GameActionException {
+        MapLocation myLocation = rc.getLocation();
+        MapLocation nearestKing = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        for (int i = 0; i < 5; i++) {
+            int offset = i * 2;
+            int x = rc.readSharedArray(offset);
+            int y = rc.readSharedArray(offset + 1);
+
+            // Skip if coordinates are 0,0 (uninitialized)
+            if (x == 0 && y == 0) {
+                continue;
+            }
+
+            MapLocation kingLocation = new MapLocation(x, y);
+            int distance = myLocation.distanceSquaredTo(kingLocation);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestKing = kingLocation;
+            }
+        }
+
+        return nearestKing;
     }
 
     public MapLocation runAwayFromOtherRats(RobotController rc) {

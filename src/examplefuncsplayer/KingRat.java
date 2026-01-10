@@ -9,6 +9,7 @@ public class KingRat extends Rat {
     @Override
     public void run(RobotController rc) {
         try {
+            writeLocationToSharedArray(rc, rc.getLocation(), 0);
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);
             if (targetLocation != null) {
@@ -30,18 +31,24 @@ public class KingRat extends Rat {
         MapLocation buildLocation = rc.getLocation().add(Direction.NORTH).add(Direction.NORTH);
         if (!notBuild && rc.canBuildRat(buildLocation)) {
             rc.buildRat(buildLocation);
-            notBuild = true;
+            //notBuild = true;
         }
+    }
+
+    public void writeLocationToSharedArray(RobotController rc, MapLocation location, int offset)
+            throws GameActionException {
+        rc.writeSharedArray(offset, location.x);
+        rc.writeSharedArray(offset + 1, location.y);
     }
 
     public MapLocation determineTargetLocation(RobotController rc) {
         MapLocation target = targetLocation;
-        
+
         MapLocation runLocation = runAwayFromCats(rc);
         if (runLocation != null) {
             target = runLocation;
         }
-        
+
         return target;
     }
 
