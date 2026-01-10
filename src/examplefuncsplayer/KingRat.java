@@ -65,10 +65,7 @@ public class KingRat extends Rat {
     public MapLocation determineTargetLocation(RobotController rc) {
         MapLocation target = targetLocation;
         MapLocation runLocation = runAwayFromCats(rc);
-        if (runLocation != null) {
-            target = runLocation;
-        }
-
+        target = runLocation;
         return target;
     }
 
