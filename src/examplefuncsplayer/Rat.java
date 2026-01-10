@@ -19,7 +19,7 @@ public abstract class Rat {
     public abstract void run(RobotController rc);
 
     public static void executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
-        Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation);
+        Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
         System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
             case MOVE:
