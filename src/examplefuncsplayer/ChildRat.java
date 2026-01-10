@@ -20,9 +20,9 @@ public class ChildRat extends Rat {
             if (rc.canBecomeRatKing()) {
                 rc.becomeRatKing();
             }
-            // if (nearestCatLocation != null) {
-            //     rc.attack(nearestCatLocation);
-            // }
+            if (nearestCatLocation != null) {
+                rc.attack(nearestCatLocation);
+            }
 
             handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
@@ -51,7 +51,10 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
-        MapLocation runLocation = runAwayFromOtherRats(rc);
+        if (mineLocation != null) {
+            target = mineLocation;
+        }
+        MapLocation runLocation = runAwayFromRatKing(rc);
         if (runLocation != null) {
             target = runLocation;
         }
@@ -109,7 +112,7 @@ public class ChildRat extends Rat {
         return nearestKing;
     }
 
-    public MapLocation runAwayFromOtherRats(RobotController rc) {
+    public MapLocation runAwayFromRatKing(RobotController rc) {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestLocation = null;
         int minDistance = 100000;

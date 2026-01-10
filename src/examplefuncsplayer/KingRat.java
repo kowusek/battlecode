@@ -3,7 +3,7 @@ package examplefuncsplayer;
 import battlecode.common.*;
 
 public class KingRat extends Rat {
-    protected int toBuild = 9999;
+    protected int desiredRatCost = 20;
     static MapLocation targetLocation = null;
     static int mySharedArrayOffset = -1;
     
@@ -41,7 +41,7 @@ public class KingRat extends Rat {
     }
 
     public void buildRat(RobotController rc) throws GameActionException {
-        if (toBuild <= 0) {
+        if (rc.getCurrentRatCost() > desiredRatCost) {
             return;
         }
         
@@ -61,7 +61,6 @@ public class KingRat extends Rat {
             MapLocation buildLocation = kingCenter.add(dir).add(dir);
             if (rc.canBuildRat(buildLocation)) {
                 rc.buildRat(buildLocation);
-                toBuild--;
                 return;
             }
         }
