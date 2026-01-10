@@ -46,14 +46,15 @@ public abstract class Rat {
                 waitTime++;
                 if (waitTime > 3) {
                     nav.reset();
+                    waitTime = 0;
                 }
                 break;
         }
     }
 
     public void moveToTarget(RobotController rc, MapLocation target) throws GameActionException {
-        while (rc.getLocation() != target) {
-            if (!rc.isMovementReady()) {
+        while (!rc.getLocation().equals(target)) {
+            if (!rc.isMovementReady() || !rc.isActionReady()) {
                 return;
             }
             executeMovement(rc, target);
