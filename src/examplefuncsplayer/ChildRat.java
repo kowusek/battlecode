@@ -2,12 +2,15 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
+import java.util.Random;
+
 public class ChildRat extends Rat{
     public static enum ChildRatState {
         INITIALIZE,
         GO_TO_LOCATION,
         ATTACK,
     }
+    public int waitTime = 0;
     public static ChildRatState currentChildRatState = ChildRatState.INITIALIZE;
 
     @Override
@@ -38,8 +41,12 @@ public class ChildRat extends Rat{
     }
 
     private void goToLocation(RobotController rc) throws GameActionException {
-        MapLocation targetLocation = new MapLocation(0, 0);
-        Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation);
+        MapLocation loc1 = new MapLocation(0, 0);
+        MapLocation loc2 = new MapLocation(57, 25);
+        // Randomly pick one
+        Random rand = new Random();
+        MapLocation targetLocation = (rand.nextBoolean()) ? loc1 : loc2;
+        Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
         System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
             case MOVE:
@@ -47,19 +54,33 @@ public class ChildRat extends Rat{
                     rc.turn(action.dir);
                     rc.moveForward();
                 }
+                waitTime = 0;
                 break;
             case TURN:
                 if (rc.canTurn(action.dir)) {
                     rc.turn(action.dir);
                 }
+                waitTime = 0;
                 break;
             case DELETE_DIRT:
                 if (rc.canRemoveDirt(rc.getLocation().add(action.dir))) {
                     rc.removeDirt(rc.getLocation().add(action.dir));
+                    nav.reset();
                 }
+                waitTime = 0;
+                break;
+            case OCCUPIED:
+                waitTime = 0;
+                break;
+            case FINISHED:
+                waitTime = 0;
                 break;
             case WAIT:
                 // do nothing
+                waitTime++;
+                if (waitTime > 3){
+                    nav.reset();
+                }
                 break;
         }
     }
