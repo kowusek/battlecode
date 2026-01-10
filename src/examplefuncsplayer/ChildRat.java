@@ -1,34 +1,38 @@
 package examplefuncsplayer;
 
 import battlecode.common.*;
+import java.util.*;
 
 import java.util.Random;
 
-public class ChildRat extends Rat{
+public class ChildRat extends Rat {
     public static enum ChildRatState {
         INITIALIZE,
         GO_TO_LOCATION,
-        ATTACK,
+        CHEESE,
     }
-    public int waitTime = 0;
+
+    static final Random rng = new Random(6147);
+    static MapLocation targetLocation = null;
+    MapLocation ratKingLocation = null;
+    int[][] memoryMap = null;
     public static ChildRatState currentChildRatState = ChildRatState.INITIALIZE;
 
     @Override
     public void run(RobotController rc) {
         try {
-            if (memoryMap == null){
+            ratKingLocation = findNearestRatKing(rc);
+            if (memoryMap == null) {
                 initMemoryMap(rc);
             }
             updateMemoryMap(rc);
-            //debugMemoryMap(rc);
-            switch (currentChildRatState){
-                case INITIALIZE:
-                    currentChildRatState = ChildRatState.GO_TO_LOCATION;
-                case GO_TO_LOCATION:
-                    goToLocation(rc);
-            }
+            // debugPrintMap(rc);
 
-        }catch (GameActionException e) {
+            handleCheeseLogic(rc);
+            targetLocation = determineTargetLocation(rc);
+            moveToTarget(rc, targetLocation);
+
+        } catch (GameActionException e) {
             System.out.println("GameActionException");
             e.printStackTrace();
         } catch (Exception e) {
@@ -39,55 +43,108 @@ public class ChildRat extends Rat{
         }
 
     }
-
-    private void goToLocation(RobotController rc) throws GameActionException {
-        MapLocation loc1 = new MapLocation(0, 0);
-        MapLocation loc2 = new MapLocation(57, 25);
-        // Randomly pick one
-        MapLocation targetLocation = (rc.getID() % 2 == 0) ? loc1 : loc2;
-        Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
-        System.out.println("action " + action.type + " " + action.dir);
-        switch (action.type) {
-            case MOVE:
-                if (rc.canMove(action.dir)) {
-                    rc.turn(action.dir);
-                    rc.moveForward();
-                }
-                waitTime = 0;
-                break;
-            case TURN:
-                if (rc.canTurn(action.dir)) {
-                    rc.turn(action.dir);
-                }
-                waitTime = 0;
-                break;
-            case DELETE_DIRT:
-                if (rc.canRemoveDirt(rc.getLocation().add(action.dir))) {
-                    rc.removeDirt(rc.getLocation().add(action.dir));
-                    nav.reset();
-                }
-                waitTime = 0;
-                break;
-            case OCCUPIED:
-                waitTime = 0;
-                break;
-            case FINISHED:
-                waitTime = 0;
-                break;
-            case WAIT:
-                // do nothing
-                waitTime++;
-                if (waitTime > 3){
-                    nav.reset();
-                }
-                break;
+    public void handleCheeseLogic(RobotController rc) throws GameActionException {
+        if (rc.canPickUpCheese(rc.getLocation())) {
+            rc.pickUpCheese(rc.getLocation());
+        }
+        if (ratKingLocation != null && rc.canTransferCheese(ratKingLocation, rc.getRawCheese())) {
+            rc.transferCheese(ratKingLocation, rc.getRawCheese());
         }
     }
 
+    public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
+        MapLocation target = targetLocation;
+
+        MapLocation cheeseLocation = findNearestCheese(rc);
+        if (cheeseLocation != null) {
+            target = cheeseLocation;
+        }
+
+        MapLocation runLocation = runAwayFromOtherRats(rc);
+        if (runLocation != null) {
+            target = runLocation;
+        }
+
+        if (target != null && rc.getRawCheese() != 0) {
+            target = ratKingLocation;
+        }
+
+        if (target == null) {
+            target = runToRandomLocation(rc);
+        }
+
+        return target;
+    }
+
+    public static MapLocation runToRandomLocation(RobotController rc) {
+        int mapWidth = rc.getMapWidth();
+        int mapHeight = rc.getMapHeight();
+        int randX = rng.nextInt(mapWidth);
+        int randY = rng.nextInt(mapHeight);
+        return new MapLocation(randX, randY);
+    }
+
+    public MapLocation findNearestRatKing(RobotController rc) throws GameActionException {
+        MapLocation myLocation = rc.getLocation();
+        MapLocation nearestKing = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        for (int i = 0; i < 5; i++) {
+            int offset = i * 2;
+            int x = rc.readSharedArray(offset);
+            int y = rc.readSharedArray(offset + 1);
+
+            // Skip if coordinates are 0,0 (uninitialized)
+            if (x == 0 && y == 0) {
+                continue;
+            }
+
+            MapLocation kingLocation = new MapLocation(x, y);
+            int distance = myLocation.distanceSquaredTo(kingLocation);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestKing = kingLocation;
+            }
+        }
+
+        return nearestKing;
+    }
+
+    public MapLocation runAwayFromOtherRats(RobotController rc) {
+        MapLocation myLocation = rc.getLocation();
+        MapLocation nearestLocation = null;
+        int minDistance = 100000;
+
+        for (RobotInfo rat : rc.senseNearbyRobots()) {
+            int distance = myLocation.distanceSquaredTo(rat.getLocation());
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestLocation = rat.getLocation();
+            }
+        }
+
+        if (nearestLocation != null) {
+            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
+            //System.out.print("Running away to " + furthestLocation);
+            return furthestLocation;
+        }
+        return null;
+    }
+
+    public MapLocation findNearestCheese(RobotController rc) {
+        int mapWidth = rc.getMapWidth();
+        int mapHeight = rc.getMapHeight();
+        for (int x = 0; x < mapWidth; x++) {
+            for (int y = 0; y < mapHeight; y++) {
+                if (memoryMap[x][y] == StaticTileTypes.CHEESE.ordinal()) {
+                    return new MapLocation(x, y);
+                }
+            }
+        }
+        return null;
+    }
     private void updateMemoryMap(RobotController rc) {
         MapInfo[] sensed = rc.senseNearbyMapInfos();
-        //RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().getVisionRadiusSquared(), rc.getTeam().opponent());
-        //RobotInfo[] nearbyCats = rc.senseNearbyRobots(rc.getType().getVisionRadiusSquared(), Team.NEUTRAL);
         for (MapInfo info : sensed) {
             MapLocation loc = info.getMapLocation();
             int x = loc.x;

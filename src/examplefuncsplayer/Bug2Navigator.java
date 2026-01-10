@@ -110,7 +110,6 @@ public class Bug2Navigator {
         return Direction.CENTER;
     }
 
-
     // ===== M-line Check =====
     private boolean onMLine(MapLocation start, MapLocation goal, MapLocation cur) {
         //System.out.println("start goal, cur");
@@ -151,7 +150,6 @@ public class Bug2Navigator {
         }
         return Direction.CENTER;
     }
-
     public void reset() {
         followingWall = false;
         hitDist = 0;
