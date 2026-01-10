@@ -7,7 +7,6 @@ import java.util.Random;
 
 public class ChildRat extends Rat {
 
-    static final Random rng = new Random();
     static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
@@ -17,7 +16,13 @@ public class ChildRat extends Rat {
         try {
             ratKingLocation = findNearestRatKing(rc);
             updateMineCoordinates(rc);
-            // debugPrintMap(rc);
+            senseNearbyCats(rc);
+            if (rc.canBecomeRatKing()) {
+                rc.becomeRatKing();
+            }
+            // if (nearestCatLocation != null) {
+            //     rc.attack(nearestCatLocation);
+            // }
 
             handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
@@ -46,24 +51,18 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
-
-        if (mineLocation != null && rc.getLocation().distanceSquaredTo(mineLocation) > 5) {
-            target = mineLocation;
-        } else if (target == mineLocation) {
-            target = null; // Clear mine location if we're close enough
-        }
         MapLocation runLocation = runAwayFromOtherRats(rc);
         if (runLocation != null) {
             target = runLocation;
         }
         MapLocation cheeseLocation = findNearestCheese(rc);
-        if (cheeseLocation != null) {
+        if (cheeseLocation != null && !rc.isLocationOccupied(cheeseLocation)) {
             target = cheeseLocation;
         }
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
         }
-        if (target == null) {
+        if (target == null || rc.getLocation().equals(target)) {
             target = runToRandomLocation(rc);
         }
         return target;
@@ -115,7 +114,7 @@ public class ChildRat extends Rat {
         MapLocation nearestLocation = null;
         int minDistance = 100000;
         for (RobotInfo rat : rc.senseNearbyRobots()) {
-            if (rat.getType() != UnitType.BABY_RAT && rat.getType() != UnitType.RAT_KING) {
+            if (rat.getType() != UnitType.RAT_KING && rat.team != rc.getTeam()) {
                 continue;
             }
             int distance = myLocation.distanceSquaredTo(rat.getLocation());

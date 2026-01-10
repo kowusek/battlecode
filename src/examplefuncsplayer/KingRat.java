@@ -6,13 +6,23 @@ public class KingRat extends Rat {
     protected int toBuild = 9999;
     static MapLocation targetLocation = null;
     static int mySharedArrayOffset = -1;
-    static MapLocation nearestCatLocation = null;
+    
+    static final Direction[] directions = {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.EAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHWEST,
+            Direction.WEST,
+            Direction.NORTHWEST,
+    };
 
     @Override
     public void run(RobotController rc) {
         try {
             writeLocationToSharedArray(rc, rc.getLocation());
-            senseNearbyRobots(rc);
+            senseNearbyCats(rc);
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);
             if (targetLocation != null) {
@@ -31,11 +41,29 @@ public class KingRat extends Rat {
     }
 
     public void buildRat(RobotController rc) throws GameActionException {
-        MapLocation buildLocation = rc.getLocation().add(Direction.NORTH).add(Direction.NORTH);
-        if (toBuild > 0 && rc.canBuildRat(buildLocation)) {
-            // System.out.println("inside");
-            rc.buildRat(buildLocation);
-            toBuild--;
+        if (toBuild <= 0) {
+            return;
+        }
+        
+        // King is 3x3, so we need to spawn rats around the perimeter
+        // Try all directions in random order
+        Direction[] shuffledDirections = directions.clone();
+        for (int i = shuffledDirections.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+            Direction temp = shuffledDirections[i];
+            shuffledDirections[i] = shuffledDirections[j];
+            shuffledDirections[j] = temp;
+        }
+        
+        MapLocation kingCenter = rc.getLocation();
+        for (Direction dir : shuffledDirections) {
+            // Move 2 tiles in the direction to get outside the 3x3 area
+            MapLocation buildLocation = kingCenter.add(dir).add(dir);
+            if (rc.canBuildRat(buildLocation)) {
+                rc.buildRat(buildLocation);
+                toBuild--;
+                return;
+            }
         }
     }
 
@@ -67,19 +95,6 @@ public class KingRat extends Rat {
         MapLocation runLocation = runAwayFromCats(rc);
         target = runLocation;
         return target;
-    }
-
-    public void senseNearbyRobots(RobotController rc) throws GameActionException {
-        boolean seenCat = false;
-        for (RobotInfo robot : rc.senseNearbyRobots()) {
-            if (robot.type == UnitType.CAT) {
-                nearestCatLocation = robot.getLocation();
-                seenCat = true;
-            }
-        }
-        if (!seenCat) {
-            nearestCatLocation = null;
-        }
     }
 
     public MapLocation runAwayFromCats(RobotController rc) {

@@ -1,12 +1,17 @@
 package examplefuncsplayer;
 
+import java.util.Random;
+
 import battlecode.common.*;
 
 public abstract class Rat {
+
+    static final Random rng = new Random();
     protected static Bug2Navigator nav = new Bug2Navigator();
     protected int turnCount = 0;
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
+    protected static MapLocation nearestCatLocation = null;
 
     protected enum StaticTileTypes {
         DIRT,
@@ -76,5 +81,18 @@ public abstract class Rat {
             nextLocation = furthestLocation.add(awayDir);
         }
         return furthestLocation;
+    }
+
+    public void senseNearbyCats(RobotController rc) throws GameActionException {
+        boolean seenCat = false;
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            if (robot.type == UnitType.CAT) {
+                nearestCatLocation = robot.getLocation();
+                seenCat = true;
+            }
+        }
+        if (!seenCat) {
+            nearestCatLocation = null;
+        }
     }
 }
