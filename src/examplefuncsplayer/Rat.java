@@ -51,12 +51,12 @@ public abstract class Rat {
     }
 
     public void moveToTarget(RobotController rc, MapLocation target) throws GameActionException {
-//        while (rc.getLocation() != target &&
-//                rc.isMovementReady() &&
-//                rc.isTurningReady()) {
-//            executeMovement(rc, target);
-//        }
-        executeMovement(rc, target);
+        while (rc.getLocation() != target) {
+            if (!rc.isMovementReady()) {
+                return;
+            }
+            executeMovement(rc, target);
+        }
     }
 
     public MapLocation findFurthestLocationAwayFrom(RobotController rc, MapLocation nearestLocation) {

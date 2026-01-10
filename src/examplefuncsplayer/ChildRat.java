@@ -10,16 +10,14 @@ public class ChildRat extends Rat {
     static final Random rng = new Random(6147);
     static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
+    static MapLocation mineLocation = null;
 
     @Override
     public void run(RobotController rc) {
         try {
             ratKingLocation = findNearestRatKing(rc);
-            if (memoryMap == null) {
-                initMemoryMap(rc);
-            }
-            updateMemoryMap(rc);
-            //debugPrintMap(rc);
+            updateMineCoordinates(rc);
+            // debugPrintMap(rc);
 
             handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
@@ -48,11 +46,11 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
-        MapLocation mineLocation = findNearestThing(rc, StaticTileTypes.MINE);
+
         if (mineLocation != null) {
             target = mineLocation;
         }
-        MapLocation cheeseLocation = findNearestThing(rc, StaticTileTypes.CHEESE);
+        MapLocation cheeseLocation = findNearestCheese(rc);
         if (cheeseLocation != null) {
             target = cheeseLocation;
         }
@@ -69,22 +67,14 @@ public class ChildRat extends Rat {
         return target;
     }
 
-    protected MapLocation findNearestThing(RobotController rc, StaticTileTypes tileType) {
-        MapLocation myLocation = rc.getLocation();
-        MapLocation nearestTileType = null;
-        int minDistance = Integer.MAX_VALUE;
-        for (int x = 0; x < rc.getMapWidth(); x++) {
-            for (int y = 0; y < rc.getMapHeight(); y++) {
-                if (memoryMap[x][y] == tileType.ordinal()) {
-                    int distance = myLocation.distanceSquaredTo(new MapLocation(x, y));
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        nearestTileType = new MapLocation(x, y);
-                    }
-                }
+    public MapLocation findNearestCheese(RobotController rc) {
+        MapInfo[] sensed = rc.senseNearbyMapInfos();
+        for (MapInfo info : sensed) {
+            if (info.getCheeseAmount() > 0) {
+                return info.getMapLocation();
             }
         }
-        return nearestTileType;
+        return null;
     }
 
     public static MapLocation runToRandomLocation(RobotController rc) {
@@ -131,63 +121,18 @@ public class ChildRat extends Rat {
         }
         if (nearestLocation != null) {
             MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
-            //System.out.print("Running away to " + furthestLocation);
+            // System.out.print("Running away to " + furthestLocation);
             return furthestLocation;
         }
         return null;
     }
 
-    private void updateMemoryMap(RobotController rc) {
+    private void updateMineCoordinates(RobotController rc) {
         MapInfo[] sensed = rc.senseNearbyMapInfos();
         for (MapInfo info : sensed) {
-            MapLocation loc = info.getMapLocation();
-            int x = loc.x;
-            int y = loc.y;
-            if (info.isDirt()){
-                memoryMap[x][y] = StaticTileTypes.DIRT.ordinal();
-            }else if (info.isWall()){
-                memoryMap[x][y] = StaticTileTypes.WALL.ordinal();
+            if (info.hasCheeseMine()) {
+                mineLocation = info.getMapLocation();
             }
-            else if (info.hasCheeseMine()){
-                memoryMap[x][y] = StaticTileTypes.MINE.ordinal();
-            }
-            else if (info.getCheeseAmount()> 0){
-                memoryMap[x][y] = StaticTileTypes.CHEESE.ordinal();
-            }else {
-                memoryMap[x][y] = StaticTileTypes.FREE.ordinal();
-            }
-        }
-    }
-
-    private void initMemoryMap(RobotController rc) {
-        int mapWidth = rc.getMapWidth();
-        int mapHeight = rc.getMapHeight();
-        memoryMap = new int[mapWidth][mapHeight];
-        // Initially unknown
-        for (int x = 0; x < mapWidth; x++) {
-            for (int y = 0; y < mapHeight; y++) {
-                memoryMap[x][y] = StaticTileTypes.UNKNOWN.ordinal();
-            }
-        }
-    }
-
-    private void debugMemoryMap(RobotController rc) {
-        int mapWidth = rc.getMapWidth();
-        int mapHeight = rc.getMapHeight();
-        System.out.println();
-        for (int y = 0; y <  mapHeight; y++) {  // print top to bottom
-            for (int x = 0; x < mapWidth; x++) {
-                System.out.print("x "+ x + " y " + y);
-                switch (memoryMap[x][y]) {
-                    case 0: System.out.print("D "); break;  // DIRT
-                    case 1: System.out.print(". "); break;  // FREE
-                    case 2: System.out.print("C "); break;  // CHEESE
-                    case 3: System.out.print("? "); break;  // UNKNOWN
-                    case 4: System.out.print("X "); break;  // WALL
-                    case 5: System.out.print("M "); break;  // MINE
-                }
-            }
-            System.out.println();
         }
     }
 }
