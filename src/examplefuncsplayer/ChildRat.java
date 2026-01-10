@@ -7,18 +7,20 @@ import java.util.Random;
 
 public class ChildRat extends Rat {
 
-    static final Random rng = new Random(6147);
-    static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
 
     @Override
     public void run(RobotController rc) {
         try {
+            if (rng == null){
+                rng = new Random(rc.getID());
+            }
+            if (memoryMap == null) {
+                initMemoryMap(rc);
+            }
+            updateMemoryMap(rc);
             ratKingLocation = findNearestRatKing(rc);
-            updateMineCoordinates(rc);
-            // debugPrintMap(rc);
-
             handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
             moveToTarget(rc, targetLocation);
@@ -46,17 +48,26 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
-
-        if (mineLocation != null) {
+        MapLocation mineLocation = findNearestStaticTileType(rc, StaticTileTypes.MINE);
+        if (mineLocation != null && rc.getRawCheese() < 20) {
             target = mineLocation;
         }
-        MapLocation cheeseLocation = findNearestCheese(rc);
-        if (cheeseLocation != null) {
+        MapLocation cheeseLocation = findNearestStaticTileType(rc, StaticTileTypes.CHEESE);
+        if (cheeseLocation != null && rc.getRawCheese() < 20) {
             target = cheeseLocation;
         }
         MapLocation runLocation = runAwayFromOtherRats(rc);
         if (runLocation != null) {
-            target = runLocation;
+            Direction away = rc.getLocation().directionTo(runLocation);
+            Direction[] candidates = {
+                    away,
+                    away.rotateLeft(),
+                    away.rotateRight(),
+                    away.rotateLeft().rotateLeft(),
+                    away.rotateRight().rotateRight()
+            };
+            Direction chosen = candidates[rng.nextInt(candidates.length)];
+            target = rc.getLocation().add(chosen);
         }
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
@@ -67,21 +78,12 @@ public class ChildRat extends Rat {
         return target;
     }
 
-    public MapLocation findNearestCheese(RobotController rc) {
-        MapInfo[] sensed = rc.senseNearbyMapInfos();
-        for (MapInfo info : sensed) {
-            if (info.getCheeseAmount() > 0) {
-                return info.getMapLocation();
-            }
-        }
-        return null;
-    }
-
     public static MapLocation runToRandomLocation(RobotController rc) {
         int mapWidth = rc.getMapWidth();
         int mapHeight = rc.getMapHeight();
         int randX = rng.nextInt(mapWidth);
         int randY = rng.nextInt(mapHeight);
+        System.out.println("randX " + randX + "randY" + randY);
         return new MapLocation(randX, randY);
     }
 
@@ -111,7 +113,7 @@ public class ChildRat extends Rat {
     public MapLocation runAwayFromOtherRats(RobotController rc) {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestLocation = null;
-        int minDistance = 100000;
+        int minDistance = 10;
         for (RobotInfo rat : rc.senseNearbyRobots()) {
             int distance = myLocation.distanceSquaredTo(rat.getLocation());
             if (distance < minDistance) {
@@ -126,13 +128,61 @@ public class ChildRat extends Rat {
         }
         return null;
     }
+    protected MapLocation findNearestStaticTileType(RobotController rc, StaticTileTypes staticTileType) {
+        int myX = rc.getLocation().x;
+        int myY = rc.getLocation().y;
 
-    private void updateMineCoordinates(RobotController rc) {
-        MapInfo[] sensed = rc.senseNearbyMapInfos();
-        for (MapInfo info : sensed) {
-            if (info.hasCheeseMine()) {
-                mineLocation = info.getMapLocation();
+        int minDistance = Integer.MAX_VALUE;
+        int radius = 5;
+        MapLocation nearestTileType = null;
+        int width = rc.getMapWidth();
+        int height = rc.getMapHeight();
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            int x = myX + dx;
+            if (x < 0 || x >= width) continue;
+
+            for (int dy = -radius; dy <= radius; dy++) {
+                int y = myY + dy;
+                if (y < 0 || y >= height) continue;
+
+                if (memoryMap[x][y] == staticTileType.ordinal()) {
+                    int dist = dx * dx + dy * dy;
+
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        nearestTileType = new MapLocation(x, y);
+                    }
+                }
             }
         }
+        return nearestTileType;
+    }
+    private void updateMemoryMap(RobotController rc) {
+        MapInfo[] sensed = rc.senseNearbyMapInfos();
+        for (MapInfo info : sensed) {
+            MapLocation loc = info.getMapLocation();
+            int x = loc.x;
+            int y = loc.y;
+            if (info.isDirt()){
+                memoryMap[x][y] = StaticTileTypes.DIRT.ordinal();
+            }else if (info.isWall()){
+                memoryMap[x][y] = StaticTileTypes.WALL.ordinal();
+            }
+            else if (info.hasCheeseMine()){
+                memoryMap[x][y] = StaticTileTypes.MINE.ordinal();
+            }
+            else if (info.getCheeseAmount()> 0){
+                memoryMap[x][y] = StaticTileTypes.CHEESE.ordinal();
+            }else {
+                memoryMap[x][y] = StaticTileTypes.FREE.ordinal();
+            }
+        }
+    }
+
+    private void initMemoryMap(RobotController rc) {
+        int mapWidth = rc.getMapWidth();
+        int mapHeight = rc.getMapHeight();
+        memoryMap = new int[mapWidth][mapHeight];
     }
 }

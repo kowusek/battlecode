@@ -2,6 +2,8 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
+import java.util.Random;
+
 public class KingRat extends Rat {
     protected int toBuild = 9999;
     static MapLocation targetLocation = null;
@@ -10,6 +12,9 @@ public class KingRat extends Rat {
     @Override
     public void run(RobotController rc) {
         try {
+            if (rng == null){
+                rng = new Random(rc.getID());
+            }
             writeLocationToSharedArray(rc, rc.getLocation());
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);

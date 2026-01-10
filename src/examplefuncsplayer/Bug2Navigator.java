@@ -54,8 +54,10 @@ public class Bug2Navigator {
                 if(!rc.isActionReady()){
                     return new Action(Action.ActionType.WAIT, Direction.CENTER);
                 }
+                if(rc.getAllCheese() > 100){
+                    return new Action(Action.ActionType.DELETE_DIRT, dirtDirection);
+                }
                 //System.out.println("dirtDirection " + dirtDirection);
-                return new Action(Action.ActionType.DELETE_DIRT, dirtDirection);
             }
         }
         if(!rc.isMovementReady() || !rc.isTurningReady()){
