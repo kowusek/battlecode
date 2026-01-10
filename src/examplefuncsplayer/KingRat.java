@@ -3,7 +3,7 @@ package examplefuncsplayer;
 import battlecode.common.*;
 
 public class KingRat extends Rat {
-    protected int toBuild = 15;
+    protected int toBuild = 9999;
     static MapLocation targetLocation = null;
     static int mySharedArrayOffset = -1;
 
@@ -54,7 +54,6 @@ public class KingRat extends Rat {
                 }
             }
         }
-        
         // Write location to our reserved slot
         if (mySharedArrayOffset != -1) {
             rc.writeSharedArray(mySharedArrayOffset, location.x);
@@ -64,7 +63,6 @@ public class KingRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) {
         MapLocation target = targetLocation;
-
         MapLocation runLocation = runAwayFromCats(rc);
         if (runLocation != null) {
             target = runLocation;

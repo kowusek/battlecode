@@ -39,14 +39,14 @@ public class Bug2Navigator {
         // We are at the destination
         if (current.distanceSquaredTo(goal) == 0){
             //System.out.println("current.distanceSquaredTo(goal) == 0");
-            return new Action(Action.ActionType.WAIT, Direction.CENTER);
+            return new Action(Action.ActionType.FINISHED, Direction.CENTER);
         }
         Direction directionToTarget = current.directionTo(goal);
         // targetPosition is occupied and next to us
         if(rc.canSenseLocation(goal) && rc.isLocationOccupied(goal) && rc.adjacentLocation(directionToTarget).distanceSquaredTo(goal) == 0){
-            return new Action(Action.ActionType.FINISHED, Direction.CENTER);
+            return new Action(Action.ActionType.OCCUPIED, Direction.CENTER);
+
         }
-        // Direction to goal
         //System.out.println("directionToTarget " + directionToTarget);
         if (deleteDirt){
             Direction dirtDirection = findAnyRemovableDirt(rc);
@@ -82,6 +82,8 @@ public class Bug2Navigator {
                 && current.distanceSquaredTo(targetLoc) <= hitDist
                 && rc.canMove(directionToTarget)) {
             followingWall = false;
+            wallDir = Direction.CENTER;
+            wallPosition = null;
             //System.out.println("onMLine(startLoc, goal, current)");
             return new Action(Action.ActionType.MOVE, directionToTarget);
         }

@@ -6,17 +6,10 @@ import java.util.*;
 import java.util.Random;
 
 public class ChildRat extends Rat {
-    public static enum ChildRatState {
-        INITIALIZE,
-        GO_TO_LOCATION,
-        CHEESE,
-    }
 
     static final Random rng = new Random(6147);
     static MapLocation targetLocation = null;
-    MapLocation ratKingLocation = null;
-    int[][] memoryMap = null;
-    public static ChildRatState currentChildRatState = ChildRatState.INITIALIZE;
+    static MapLocation ratKingLocation = null;
 
     @Override
     public void run(RobotController rc) {
@@ -26,7 +19,7 @@ public class ChildRat extends Rat {
                 initMemoryMap(rc);
             }
             updateMemoryMap(rc);
-            // debugPrintMap(rc);
+            //debugPrintMap(rc);
 
             handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
@@ -43,6 +36,7 @@ public class ChildRat extends Rat {
         }
 
     }
+
     public void handleCheeseLogic(RobotController rc) throws GameActionException {
         if (rc.canPickUpCheese(rc.getLocation())) {
             rc.pickUpCheese(rc.getLocation());
@@ -54,51 +48,43 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
-
-        MapLocation mineLocation = runToMine(rc);
+        MapLocation mineLocation = findNearestThing(rc, StaticTileTypes.MINE);
         if (mineLocation != null) {
             target = mineLocation;
         }
-
-        MapLocation cheeseLocation = findNearestCheese(rc);
+        MapLocation cheeseLocation = findNearestThing(rc, StaticTileTypes.CHEESE);
         if (cheeseLocation != null) {
             target = cheeseLocation;
         }
-
         MapLocation runLocation = runAwayFromOtherRats(rc);
         if (runLocation != null) {
             target = runLocation;
         }
-
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
         }
-
         if (target == null) {
             target = runToRandomLocation(rc);
         }
-
         return target;
     }
 
-    public MapLocation runToMine(RobotController rc) {
+    protected MapLocation findNearestThing(RobotController rc, StaticTileTypes tileType) {
         MapLocation myLocation = rc.getLocation();
-        MapLocation nearestMine = null;
+        MapLocation nearestTileType = null;
         int minDistance = Integer.MAX_VALUE;
-
         for (int x = 0; x < rc.getMapWidth(); x++) {
             for (int y = 0; y < rc.getMapHeight(); y++) {
-                if (memoryMap[x][y] == StaticTileTypes.MINE.ordinal()) {
+                if (memoryMap[x][y] == tileType.ordinal()) {
                     int distance = myLocation.distanceSquaredTo(new MapLocation(x, y));
                     if (distance < minDistance) {
                         minDistance = distance;
-                        nearestMine = new MapLocation(x, y);
+                        nearestTileType = new MapLocation(x, y);
                     }
                 }
             }
         }
-
-        return nearestMine;
+        return nearestTileType;
     }
 
     public static MapLocation runToRandomLocation(RobotController rc) {
@@ -113,7 +99,6 @@ public class ChildRat extends Rat {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestKing = null;
         int minDistance = Integer.MAX_VALUE;
-
         for (int i = 0; i < 5; i++) {
             int offset = i * 2;
             int x = rc.readSharedArray(offset);
@@ -123,7 +108,6 @@ public class ChildRat extends Rat {
             if (x == 0 && y == 0) {
                 continue;
             }
-
             MapLocation kingLocation = new MapLocation(x, y);
             int distance = myLocation.distanceSquaredTo(kingLocation);
             if (distance < minDistance) {
@@ -131,7 +115,6 @@ public class ChildRat extends Rat {
                 nearestKing = kingLocation;
             }
         }
-
         return nearestKing;
     }
 
@@ -139,7 +122,6 @@ public class ChildRat extends Rat {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestLocation = null;
         int minDistance = 100000;
-
         for (RobotInfo rat : rc.senseNearbyRobots()) {
             int distance = myLocation.distanceSquaredTo(rat.getLocation());
             if (distance < minDistance) {
@@ -147,7 +129,6 @@ public class ChildRat extends Rat {
                 nearestLocation = rat.getLocation();
             }
         }
-
         if (nearestLocation != null) {
             MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
             //System.out.print("Running away to " + furthestLocation);
@@ -156,18 +137,6 @@ public class ChildRat extends Rat {
         return null;
     }
 
-    public MapLocation findNearestCheese(RobotController rc) {
-        int mapWidth = rc.getMapWidth();
-        int mapHeight = rc.getMapHeight();
-        for (int x = 0; x < mapWidth; x++) {
-            for (int y = 0; y < mapHeight; y++) {
-                if (memoryMap[x][y] == StaticTileTypes.CHEESE.ordinal()) {
-                    return new MapLocation(x, y);
-                }
-            }
-        }
-        return null;
-    }
     private void updateMemoryMap(RobotController rc) {
         MapInfo[] sensed = rc.senseNearbyMapInfos();
         for (MapInfo info : sensed) {
