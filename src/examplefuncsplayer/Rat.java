@@ -7,6 +7,7 @@ public abstract class Rat {
     protected int turnCount = 0;
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
+    static MapLocation targetLocation = null;
     protected enum StaticTileTypes {
         UNKNOWN,
         DIRT,
@@ -57,9 +58,12 @@ public abstract class Rat {
     public void moveToTarget(RobotController rc, MapLocation target) throws GameActionException {
         while (!rc.getLocation().equals(target)) {
             if (!rc.isMovementReady() || !rc.isActionReady()) {
-                return;
+                break;
             }
             executeMovement(rc, target);
+        }
+        if(rc.getLocation().equals(target)){
+            targetLocation = null;
         }
     }
 
@@ -72,8 +76,8 @@ public abstract class Rat {
 
         // Keep moving in the away direction until we hit a boundary or obstacle
         MapLocation nextLocation = furthestLocation.add(awayDir);
-        while (nextLocation.x >= 0 && nextLocation.x < mapWidth &&
-                nextLocation.y >= 0 && nextLocation.y < mapHeight) {
+        while (nextLocation.x >= 1 && nextLocation.x <= mapWidth &&
+                nextLocation.y >= 1 && nextLocation.y <= mapHeight) {
             furthestLocation = nextLocation;
             nextLocation = furthestLocation.add(awayDir);
         }

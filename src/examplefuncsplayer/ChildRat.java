@@ -8,7 +8,6 @@ import java.util.Random;
 public class ChildRat extends Rat {
 
     static final Random rng = new Random(6147);
-    static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
 
@@ -57,7 +56,16 @@ public class ChildRat extends Rat {
         }
         MapLocation runLocation = runAwayFromOtherRats(rc);
         if (runLocation != null) {
-            target = runLocation;
+            Direction away = rc.getLocation().directionTo(runLocation);
+            Direction[] candidates = {
+                    away,
+                    away.rotateLeft(),
+                    away.rotateRight(),
+                    away.rotateLeft().rotateLeft(),
+                    away.rotateRight().rotateRight()
+            };
+            Direction chosen = candidates[rng.nextInt(candidates.length)];
+            target = rc.getLocation().add(chosen);
         }
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
@@ -73,6 +81,7 @@ public class ChildRat extends Rat {
         int mapHeight = rc.getMapHeight();
         int randX = rng.nextInt(mapWidth);
         int randY = rng.nextInt(mapHeight);
+        System.out.println("randX " + randX + "randY" + randY);
         return new MapLocation(randX, randY);
     }
 
@@ -102,7 +111,7 @@ public class ChildRat extends Rat {
     public MapLocation runAwayFromOtherRats(RobotController rc) {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestLocation = null;
-        int minDistance = 100000;
+        int minDistance = 3;
         for (RobotInfo rat : rc.senseNearbyRobots()) {
             int distance = myLocation.distanceSquaredTo(rat.getLocation());
             if (distance < minDistance) {
