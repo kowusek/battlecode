@@ -20,6 +20,7 @@ public class RobotPlayer {
      */
     static int turnCount = 0;
     public static boolean notBuild = false;
+    static int[][] memoryMap = null;
     /**
      * A random number generator.
      * We will use this RNG to make some random moves. The Random class is provided by the java.util.Random
@@ -40,6 +41,14 @@ public class RobotPlayer {
             Direction.WEST,
             Direction.NORTHWEST,
     };
+    public static enum StaticTileTypes {
+        DIRT,
+        FREE,
+        CHEESE,
+        UNKNOWN,
+        WALL,
+        MINE,
+    }
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -67,6 +76,7 @@ public class RobotPlayer {
                     rc.buildRat(buildLocation);
                     notBuild = true;
                 }
+                //System.out.println("cheese" + rc.getAllCheese() + "turn " + turnCount);
                 Clock.yield();
             } else {
                 runBabyRat(rc);
@@ -75,12 +85,76 @@ public class RobotPlayer {
     }
     public static void runBabyRat(RobotController rc) throws GameActionException{
         try {
+            int mapWidth = rc.getMapWidth();
+            int mapHeight = rc.getMapHeight();
+            if (memoryMap == null){
+                memoryMap = new int[mapWidth][mapHeight];
+// Initially unknown
+                for (int x = 0; x < mapWidth; x++) {
+                    for (int y = 0; y < mapHeight; y++) {
+                        memoryMap[x][y] = StaticTileTypes.UNKNOWN.ordinal();
+                    }
+                }
+            }
+            MapInfo[] sensed = rc.senseNearbyMapInfos();
+            //RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().getVisionRadiusSquared(), rc.getTeam().opponent());
+            //RobotInfo[] nearbyCats = rc.senseNearbyRobots(rc.getType().getVisionRadiusSquared(), Team.NEUTRAL);
+            for (MapInfo info : sensed) {
+                MapLocation loc = info.getMapLocation();
+                int x = loc.x;
+                int y = loc.y;
+                if (info.isDirt()){
+                    memoryMap[x][y] = StaticTileTypes.DIRT.ordinal();
+                }else if (info.isWall()){
+                    memoryMap[x][y] = StaticTileTypes.WALL.ordinal();
+                }
+                else if (info.hasCheeseMine()){
+                    memoryMap[x][y] = StaticTileTypes.MINE.ordinal();
+                }
+                else if (info.getCheeseAmount()> 0){
+                    memoryMap[x][y] = StaticTileTypes.CHEESE.ordinal();
+                }else {
+                    memoryMap[x][y] = StaticTileTypes.FREE.ordinal();
+                }
+            }
+//            System.out.println();
+//            for (int y = 0; y <  mapHeight; y++) {  // print top to bottom
+//                for (int x = 0; x < mapWidth; x++) {
+//                    System.out.print("x "+ x + " y " + y);
+//                    switch (memoryMap[x][y]) {
+//                        case 0: System.out.print("D "); break;  // DIRT
+//                        case 1: System.out.print(". "); break;  // FREE
+//                        case 2: System.out.print("C "); break;  // CHEESE
+//                        case 3: System.out.print("? "); break;  // UNKNOWN
+//                        case 4: System.out.print("X "); break;  // WALL
+//                        case 5: System.out.print("M "); break;  // MINE
+//                    }
+//                }
+//                System.out.println();
+//            }
             MapLocation targetLocation = new MapLocation(0, 0);
-            Direction d = nav.nextMove(rc, rc.getLocation(), targetLocation);
-
-            if (d != Direction.CENTER && rc.canTurn(d) && rc.canMove(d)) {
-                rc.turn(d);
-                rc.moveForward();
+            Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation);
+            System.out.println("action " + action.type + " " + action.dir);
+            switch (action.type) {
+                case MOVE:
+                    if (rc.canMove(action.dir)) {
+                        rc.turn(action.dir);
+                        rc.moveForward();
+                    }
+                    break;
+                case TURN:
+                    if (rc.canTurn(action.dir)) {
+                        rc.turn(action.dir);
+                    }
+                    break;
+                case DELETE_DIRT:
+                    if (rc.canRemoveDirt(rc.getLocation().add(action.dir))) {
+                        rc.removeDirt(rc.getLocation().add(action.dir));
+                    }
+                    break;
+                case NONE:
+                    // do nothing
+                    break;
             }
 
         }catch (GameActionException e) {
