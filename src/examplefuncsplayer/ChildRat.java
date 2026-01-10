@@ -53,6 +53,11 @@ public class ChildRat extends Rat {
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
 
+        MapLocation mineLocation = runToMine(rc);
+        if (mineLocation != null) {
+            target = mineLocation;
+        }
+
         MapLocation cheeseLocation = findNearestCheese(rc);
         if (cheeseLocation != null) {
             target = cheeseLocation;
@@ -72,6 +77,26 @@ public class ChildRat extends Rat {
         }
 
         return target;
+    }
+
+    public MapLocation runToMine(RobotController rc) {
+        MapLocation myLocation = rc.getLocation();
+        MapLocation nearestMine = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        for (int x = 0; x < rc.getMapWidth(); x++) {
+            for (int y = 0; y < rc.getMapHeight(); y++) {
+                if (memoryMap[x][y] == StaticTileTypes.MINE.ordinal()) {
+                    int distance = myLocation.distanceSquaredTo(new MapLocation(x, y));
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestMine = new MapLocation(x, y);
+                    }
+                }
+            }
+        }
+
+        return nearestMine;
     }
 
     public static MapLocation runToRandomLocation(RobotController rc) {
