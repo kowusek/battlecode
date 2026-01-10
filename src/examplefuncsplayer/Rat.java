@@ -8,6 +8,7 @@ public abstract class Rat {
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
     static MapLocation targetLocation = null;
+    static int actionsInOneTurn = 0;
     protected enum StaticTileTypes {
         UNKNOWN,
         DIRT,
@@ -19,7 +20,7 @@ public abstract class Rat {
 
     public abstract void run(RobotController rc);
 
-    public static void executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
+    public static Bug2Navigator.Action executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
         Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
         System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
@@ -53,6 +54,7 @@ public abstract class Rat {
                 }
                 break;
         }
+        return action;
     }
 
     public void moveToTarget(RobotController rc, MapLocation target) throws GameActionException {
@@ -60,7 +62,14 @@ public abstract class Rat {
             if (!rc.isMovementReady() || !rc.isActionReady()) {
                 break;
             }
-            executeMovement(rc, target);
+            Bug2Navigator.Action action = executeMovement(rc, target);
+            if (action.type == Bug2Navigator.Action.ActionType.DELETE_DIRT){
+                actionsInOneTurn++;
+                if(actionsInOneTurn>2){
+                    actionsInOneTurn = 0;
+                    break;
+                }
+            }
         }
         if(rc.getLocation().equals(target)){
             targetLocation = null;
