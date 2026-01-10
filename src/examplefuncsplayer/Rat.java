@@ -8,10 +8,10 @@ public abstract class Rat {
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
     protected enum StaticTileTypes {
+        UNKNOWN,
         DIRT,
         FREE,
         CHEESE,
-        UNKNOWN,
         WALL,
         MINE,
     }
@@ -20,7 +20,7 @@ public abstract class Rat {
 
     public static void executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
         Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
-        //System.out.println("action " + action.type + " " + action.dir);
+        System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
             case MOVE:
                 if (rc.canMove(action.dir)) {
@@ -44,6 +44,9 @@ public abstract class Rat {
             case WAIT, OCCUPIED, FINISHED:
                 waitTime++;
                 if (waitTime > 3){
+                    if (rc.canTurn(rc.getDirection().rotateRight())) {
+                        rc.turn(rc.getDirection().rotateRight());
+                    }
                     nav.reset();
                     waitTime = 0;
                 }

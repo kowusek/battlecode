@@ -3,7 +3,7 @@ package examplefuncsplayer;
 import battlecode.common.*;
 
 public class KingRat extends Rat {
-    protected int toBuild = 9999;
+    protected int toBuild = 20;
     static MapLocation targetLocation = null;
     static int mySharedArrayOffset = -1;
 
