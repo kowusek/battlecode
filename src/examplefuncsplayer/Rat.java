@@ -2,9 +2,12 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
+import java.util.Random;
+
 public abstract class Rat {
     protected static Bug2Navigator nav = new Bug2Navigator();
     protected int turnCount = 0;
+    protected static Random rng = null;
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
     static MapLocation targetLocation = null;

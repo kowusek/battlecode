@@ -7,13 +7,15 @@ import java.util.Random;
 
 public class ChildRat extends Rat {
 
-    static final Random rng = new Random(6147);
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
 
     @Override
     public void run(RobotController rc) {
         try {
+            if (rng == null){
+                rng = new Random(rc.getID());
+            }
             if (memoryMap == null) {
                 initMemoryMap(rc);
             }
@@ -111,7 +113,7 @@ public class ChildRat extends Rat {
     public MapLocation runAwayFromOtherRats(RobotController rc) {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestLocation = null;
-        int minDistance = 3;
+        int minDistance = 10;
         for (RobotInfo rat : rc.senseNearbyRobots()) {
             int distance = myLocation.distanceSquaredTo(rat.getLocation());
             if (distance < minDistance) {
