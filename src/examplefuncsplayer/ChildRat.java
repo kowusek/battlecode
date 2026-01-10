@@ -52,10 +52,10 @@ public class ChildRat extends Rat {
         } else if (target == mineLocation) {
             target = null; // Clear mine location if we're close enough
         }
-        // MapLocation runLocation = runAwayFromOtherRats(rc);
-        // if (runLocation != null) {
-        // target = runLocation;
-        // }
+        MapLocation runLocation = runAwayFromOtherRats(rc);
+        if (runLocation != null) {
+            target = runLocation;
+        }
         MapLocation cheeseLocation = findNearestCheese(rc);
         if (cheeseLocation != null) {
             target = cheeseLocation;
