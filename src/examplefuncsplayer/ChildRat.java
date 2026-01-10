@@ -61,9 +61,9 @@ public class ChildRat extends Rat {
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
         }
-        if (target == null) {
-            target = runToRandomLocation(rc);
-        }
+        // if (target == null) {
+        //     target = runToRandomLocation(rc);
+        // }
         return target;
     }
 
@@ -113,6 +113,9 @@ public class ChildRat extends Rat {
         MapLocation nearestLocation = null;
         int minDistance = 100000;
         for (RobotInfo rat : rc.senseNearbyRobots()) {
+            if (rat.getType() != UnitType.BABY_RAT && rat.getType() != UnitType.RAT_KING) {
+                continue;
+            }
             int distance = myLocation.distanceSquaredTo(rat.getLocation());
             if (distance < minDistance) {
                 minDistance = distance;
