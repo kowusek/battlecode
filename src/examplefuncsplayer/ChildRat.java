@@ -23,26 +23,8 @@ public class ChildRat extends Rat {
             }
             updateMemoryMap(rc);
             // debugPrintMap(rc);
-            MapLocation cheeseLocation = findNearestCheese(rc);
-            if (cheeseLocation != null) {
-                targetLocation = cheeseLocation;
-            }
-            MapLocation runLocation = runAwayFromOtherRats(rc);
-            if (runLocation != null) {
-                targetLocation = runLocation;
-            }
-            if (!rc.canPickUpCheese(targetLocation)) {
-                MapLocation randomLocation = runToRandomLocation(rc); // run to king
-                targetLocation = randomLocation;
-            }
-            if (targetLocation == null) {
-                targetLocation = runToRandomLocation(rc);
-            }
-            while (rc.getLocation() != targetLocation &&
-                    rc.isMovementReady() &&
-                    rc.isTurningReady()) {
-                executeMovement(rc, targetLocation);
-            }
+            targetLocation = determineTargetLocation(rc);
+            moveToTarget(rc, targetLocation);
 
         } catch (GameActionException e) {
             System.out.println("GameActionException");
@@ -54,6 +36,30 @@ public class ChildRat extends Rat {
             Clock.yield();
         }
 
+    }
+
+    public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
+        MapLocation target = targetLocation;
+
+        MapLocation cheeseLocation = findNearestCheese(rc);
+        if (cheeseLocation != null) {
+            target = cheeseLocation;
+        }
+
+        MapLocation runLocation = runAwayFromOtherRats(rc);
+        if (runLocation != null) {
+            target = runLocation;
+        }
+
+        if (target != null && !rc.canPickUpCheese(target)) {
+            target = runToRandomLocation(rc); // run to king
+        }
+
+        if (target == null) {
+            target = runToRandomLocation(rc);
+        }
+
+        return target;
     }
 
     public static MapLocation runToRandomLocation(RobotController rc) {
@@ -78,18 +84,7 @@ public class ChildRat extends Rat {
         }
 
         if (nearestLocation != null) {
-            Direction awayDir = nearestLocation.directionTo(myLocation);
-            MapLocation furthestLocation = myLocation;
-            int mapWidth = rc.getMapWidth();
-            int mapHeight = rc.getMapHeight();
-
-            // Keep moving in the away direction until we hit a boundary or obstacle
-            MapLocation nextLocation = furthestLocation.add(awayDir);
-            while (nextLocation.x >= 0 && nextLocation.x < mapWidth &&
-                    nextLocation.y >= 0 && nextLocation.y < mapHeight) {
-                furthestLocation = nextLocation;
-                nextLocation = furthestLocation.add(awayDir);
-            }
+            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
             System.out.print("Running away to " + furthestLocation);
             return furthestLocation;
         }

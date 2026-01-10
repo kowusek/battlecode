@@ -43,4 +43,29 @@ public abstract class Rat {
                 break;
         }
     }
+
+    public void moveToTarget(RobotController rc, MapLocation target) throws GameActionException {
+        while (rc.getLocation() != target &&
+                rc.isMovementReady() &&
+                rc.isTurningReady()) {
+            executeMovement(rc, target);
+        }
+    }
+
+    public MapLocation findFurthestLocationAwayFrom(RobotController rc, MapLocation nearestLocation) {
+        MapLocation myLocation = rc.getLocation();
+        Direction awayDir = nearestLocation.directionTo(myLocation);
+        MapLocation furthestLocation = myLocation;
+        int mapWidth = rc.getMapWidth();
+        int mapHeight = rc.getMapHeight();
+
+        // Keep moving in the away direction until we hit a boundary or obstacle
+        MapLocation nextLocation = furthestLocation.add(awayDir);
+        while (nextLocation.x >= 0 && nextLocation.x < mapWidth &&
+                nextLocation.y >= 0 && nextLocation.y < mapHeight) {
+            furthestLocation = nextLocation;
+            nextLocation = furthestLocation.add(awayDir);
+        }
+        return furthestLocation;
+    }
 }

@@ -2,14 +2,16 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-import java.lang.reflect.Type;
-
 public class Bug2Navigator {
 
     private boolean followingWall = false;
     private int hitDist = 0;
+
     public static class Action {
-        public enum ActionType { MOVE, TURN, DELETE_DIRT, WAIT, OCCUPIED }
+        public enum ActionType {
+            MOVE, TURN, DELETE_DIRT, WAIT, OCCUPIED
+        }
+
         public final ActionType type;
         public final Direction dir;
 
@@ -18,6 +20,7 @@ public class Bug2Navigator {
             this.dir = dir;
         }
     }
+
     private MapLocation startLoc = null;
     private MapLocation targetLoc = null;
     private Direction wallDir = Direction.CENTER;
@@ -29,7 +32,7 @@ public class Bug2Navigator {
             targetLoc = goal;
             startLoc = current;
         }
-        if (!rc.isMovementReady() || !rc.isTurningReady() || !rc.isActionReady()){
+        if (!rc.isMovementReady() || !rc.isTurningReady() || !rc.isActionReady()) {
             System.out.println("!rc.isMovementReady() || !rc.isTurningReady() || !rc.isActionReady()");
             return new Action(Action.ActionType.WAIT, Direction.CENTER);
         }
@@ -37,19 +40,18 @@ public class Bug2Navigator {
         Direction directionToTarget = current.directionTo(goal);
         System.out.println("directionToTarget " + directionToTarget);
         // We are at the destination
-        if (current.distanceSquaredTo(goal) == 0){
+        if (current.distanceSquaredTo(goal) == 0) {
             System.out.println("current.distanceSquaredTo(goal) == 0");
             return new Action(Action.ActionType.WAIT, Direction.CENTER);
         }
 
         Direction dirtDirection = findAnyRemovableDirt(rc);
-        if (dirtDirection != Direction.CENTER){
+        if (dirtDirection != Direction.CENTER) {
             System.out.println("dirtDirection " + dirtDirection);
-            if (rc.getGlobalCheese() > 200 && rc.isActionReady()){
+            if (rc.getGlobalCheese() > 200 && rc.isActionReady()) {
                 reset();
                 return new Action(Action.ActionType.DELETE_DIRT, dirtDirection);
-            }
-            else if(!rc.isActionReady()){
+            } else if (!rc.isActionReady()) {
                 return new Action(Action.ActionType.WAIT, Direction.CENTER);
             }
         }
@@ -76,7 +78,7 @@ public class Bug2Navigator {
         }
         // following wall
         Direction move = followWall(rc);
-        if (move == Direction.CENTER){
+        if (move == Direction.CENTER) {
             System.out.println("move == Direction.CENTER");
             return new Action(Action.ActionType.TURN, rc.getDirection().rotateLeft());
         }
@@ -96,7 +98,6 @@ public class Bug2Navigator {
         return Direction.CENTER;
     }
 
-
     // ===== M-line Check =====
     private boolean onMLine(MapLocation start, MapLocation goal, MapLocation cur) {
         int dx1 = goal.x - start.x;
@@ -109,14 +110,14 @@ public class Bug2Navigator {
 
     private Direction findAnyRemovableDirt(RobotController rc) {
         Direction[] directions;
-        if (rc.getType() == UnitType.BABY_RAT){
-            directions = new Direction[]{
+        if (rc.getType() == UnitType.BABY_RAT) {
+            directions = new Direction[] {
                     rc.getDirection(),
                     rc.getDirection().rotateLeft(),
                     rc.getDirection().rotateRight()
             };
-        }else{
-            directions = new Direction[]{
+        } else {
+            directions = new Direction[] {
                     rc.getDirection(),
                     rc.getDirection().rotateLeft(),
                     rc.getDirection().rotateLeft().rotateLeft(),
@@ -129,10 +130,12 @@ public class Bug2Navigator {
         }
         for (Direction dir : directions) {
             MapLocation loc = rc.getLocation().add(dir);
-            if (rc.canRemoveDirt(loc)) return dir;
+            if (rc.canRemoveDirt(loc))
+                return dir;
         }
         return Direction.CENTER;
     }
+
     // reset
     private void reset() {
         followingWall = false;

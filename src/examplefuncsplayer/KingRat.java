@@ -9,26 +9,11 @@ public class KingRat extends Rat {
     @Override
     public void run(RobotController rc) {
         try {
-            MapLocation buildLocation = rc.getLocation().add(Direction.NORTH).add(Direction.NORTH);
-            // System.out.println("outside " + buildLocation + " "+
-            // rc.canBuildRat(buildLocation) );
-            if (!notBuild && rc.canBuildRat(buildLocation)) {
-                // System.out.println("inside");
-                rc.buildRat(buildLocation);
-                notBuild = true;
-            }
-            MapLocation runLocation = runAwayFromCats(rc);
-            if (runLocation != null) {
-                targetLocation = runLocation;
-            }
+            buildRat(rc);
+            targetLocation = determineTargetLocation(rc);
             if (targetLocation != null) {
-                while (rc.getLocation() != targetLocation &&
-                        rc.isMovementReady() &&
-                        rc.isTurningReady()) {
-                    executeMovement(rc, targetLocation);
-                }
+                moveToTarget(rc, targetLocation);
             }
-
             // System.out.println("cheese" + rc.getAllCheese() + "turn " + turnCount);
         } catch (GameActionException e) {
             System.out.println("GameActionException");
@@ -39,6 +24,25 @@ public class KingRat extends Rat {
         } finally {
             Clock.yield();
         }
+    }
+
+    public void buildRat(RobotController rc) throws GameActionException {
+        MapLocation buildLocation = rc.getLocation().add(Direction.NORTH).add(Direction.NORTH);
+        if (!notBuild && rc.canBuildRat(buildLocation)) {
+            rc.buildRat(buildLocation);
+            notBuild = true;
+        }
+    }
+
+    public MapLocation determineTargetLocation(RobotController rc) {
+        MapLocation target = targetLocation;
+        
+        MapLocation runLocation = runAwayFromCats(rc);
+        if (runLocation != null) {
+            target = runLocation;
+        }
+        
+        return target;
     }
 
     public MapLocation runAwayFromCats(RobotController rc) {
@@ -58,18 +62,7 @@ public class KingRat extends Rat {
         }
 
         if (nearestLocation != null) {
-            Direction awayDir = nearestLocation.directionTo(myLocation);
-            MapLocation furthestLocation = myLocation;
-            int mapWidth = rc.getMapWidth();
-            int mapHeight = rc.getMapHeight();
-
-            // Keep moving in the away direction until we hit a boundary or obstacle
-            MapLocation nextLocation = furthestLocation.add(awayDir);
-            while (nextLocation.x >= 0 && nextLocation.x < mapWidth &&
-                    nextLocation.y >= 0 && nextLocation.y < mapHeight) {
-                furthestLocation = nextLocation;
-                nextLocation = furthestLocation.add(awayDir);
-            }
+            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
             System.out.print("Running away to " + furthestLocation);
             return furthestLocation;
         }
