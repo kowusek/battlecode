@@ -63,7 +63,7 @@ public class Bug2Navigator {
         }
         // move towards goal
         if (!followingWall && rc.canMove(directionToTarget)) {
-            //System.out.println("!followingWall && rc.canMove(directionToTarget)");
+            //System.out.println("!followingWall && rc.canMove(directionToTarget) " + directionToTarget);
             return new Action(Action.ActionType.MOVE, directionToTarget);
         }
         // start wall-following
@@ -72,8 +72,12 @@ public class Bug2Navigator {
             hitDist = current.distanceSquaredTo(targetLoc);
             wallDir = directionToTarget;
             wallPosition = rc.getLocation().add(directionToTarget);
+            Direction dir = followWall(rc);
             //System.out.println("!followingWall");
-            return new Action(Action.ActionType.MOVE, followWall(rc));
+            if (dir == Direction.CENTER){
+                return new Action(Action.ActionType.WAIT, dir);
+            }
+            return new Action(Action.ActionType.MOVE, dir);
         }
         // Bug2 exit condition: back on M-line closer to goal
         //System.out.println("current.distanceSquaredTo(targetLoc) " + current.distanceSquaredTo(targetLoc));
