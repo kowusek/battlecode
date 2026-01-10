@@ -6,11 +6,13 @@ public class KingRat extends Rat {
     protected int toBuild = 9999;
     static MapLocation targetLocation = null;
     static int mySharedArrayOffset = -1;
+    static MapLocation nearestCatLocation = null;
 
     @Override
     public void run(RobotController rc) {
         try {
             writeLocationToSharedArray(rc, rc.getLocation());
+            senseNearbyRobots(rc);
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);
             if (targetLocation != null) {
@@ -30,9 +32,8 @@ public class KingRat extends Rat {
 
     public void buildRat(RobotController rc) throws GameActionException {
         MapLocation buildLocation = rc.getLocation().add(Direction.NORTH).add(Direction.NORTH);
-        //System.out.println("outside " + buildLocation + " "+ rc.canBuildRat(buildLocation) );
         if (toBuild > 0 && rc.canBuildRat(buildLocation)) {
-            //System.out.println("inside");
+            // System.out.println("inside");
             rc.buildRat(buildLocation);
             toBuild--;
         }
@@ -71,25 +72,22 @@ public class KingRat extends Rat {
         return target;
     }
 
-    public MapLocation runAwayFromCats(RobotController rc) {
-        MapLocation myLocation = rc.getLocation();
-        MapLocation nearestLocation = null;
-        int minDistance = 100000;
-
+    public void senseNearbyRobots(RobotController rc) throws GameActionException {
+        boolean seenCat = false;
         for (RobotInfo robot : rc.senseNearbyRobots()) {
-            if (robot.type != UnitType.CAT) {
-                continue;
-            }
-            int distance = myLocation.distanceSquaredTo(robot.getLocation());
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestLocation = robot.getLocation();
+            if (robot.type == UnitType.CAT) {
+                nearestCatLocation = robot.getLocation();
+                seenCat = true;
             }
         }
+        if (!seenCat) {
+            nearestCatLocation = null;
+        }
+    }
 
-        if (nearestLocation != null) {
-            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
-            System.out.print("Running away to " + furthestLocation);
+    public MapLocation runAwayFromCats(RobotController rc) {
+        if (nearestCatLocation != null) {
+            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestCatLocation);
             return furthestLocation;
         }
         return null;

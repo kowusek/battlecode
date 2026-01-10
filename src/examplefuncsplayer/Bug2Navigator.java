@@ -6,8 +6,12 @@ public class Bug2Navigator {
 
     private boolean followingWall = false;
     private int hitDist = 0;
+
     public static class Action {
-        public enum ActionType { MOVE, TURN, DELETE_DIRT, WAIT, OCCUPIED, FINISHED }
+        public enum ActionType {
+            MOVE, TURN, DELETE_DIRT, WAIT, OCCUPIED, FINISHED
+        }
+
         public final ActionType type;
         public final Direction dir;
 
@@ -16,12 +20,14 @@ public class Bug2Navigator {
             this.dir = dir;
         }
     }
+
     private MapLocation startLoc = null;
     private MapLocation targetLoc = null;
     private Direction wallDir = Direction.CENTER;
     private MapLocation wallPosition = null;
 
-    public Action nextAction(RobotController rc, MapLocation current, MapLocation goal, boolean deleteDirt) throws GameActionException {
+    public Action nextAction(RobotController rc, MapLocation current, MapLocation goal, boolean deleteDirt)
+            throws GameActionException {
 
         if (!goal.equals(targetLoc) || startLoc == null) {
             reset();
@@ -30,40 +36,41 @@ public class Bug2Navigator {
         }
         if (followingWall) {
             if (rc.canMove(rc.getLocation().directionTo(wallPosition))) {
-                //System.out.println("reset because wall disappeared");
+                // System.out.println("reset because wall disappeared");
                 reset();
                 targetLoc = goal;
                 startLoc = current;
             }
         }
         // We are at the destination
-        if (current.distanceSquaredTo(goal) == 0){
-            //System.out.println("current.distanceSquaredTo(goal) == 0");
+        if (current.distanceSquaredTo(goal) == 0) {
+            // System.out.println("current.distanceSquaredTo(goal) == 0");
             return new Action(Action.ActionType.FINISHED, Direction.CENTER);
         }
         Direction directionToTarget = current.directionTo(goal);
         // targetPosition is occupied and next to us
-        if(rc.canSenseLocation(goal) && rc.isLocationOccupied(goal) && rc.adjacentLocation(directionToTarget).distanceSquaredTo(goal) == 0){
+        if (rc.canSenseLocation(goal) && rc.isLocationOccupied(goal)
+                && rc.adjacentLocation(directionToTarget).distanceSquaredTo(goal) == 0) {
             return new Action(Action.ActionType.OCCUPIED, Direction.CENTER);
 
         }
-        //System.out.println("directionToTarget " + directionToTarget);
-        if (deleteDirt){
+        // System.out.println("directionToTarget " + directionToTarget);
+        if (deleteDirt) {
             Direction dirtDirection = findAnyRemovableDirt(rc);
-            if (dirtDirection != Direction.CENTER){
-                if(!rc.isActionReady()){
+            if (dirtDirection != Direction.CENTER) {
+                if (!rc.isActionReady()) {
                     return new Action(Action.ActionType.WAIT, Direction.CENTER);
                 }
-                //System.out.println("dirtDirection " + dirtDirection);
+                // System.out.println("dirtDirection " + dirtDirection);
                 return new Action(Action.ActionType.DELETE_DIRT, dirtDirection);
             }
         }
-        if(!rc.isMovementReady() || !rc.isTurningReady()){
+        if (!rc.isMovementReady() || !rc.isTurningReady()) {
             return new Action(Action.ActionType.WAIT, Direction.CENTER);
         }
         // move towards goal
         if (!followingWall && rc.canMove(directionToTarget)) {
-            //System.out.println("!followingWall && rc.canMove(directionToTarget)");
+            // System.out.println("!followingWall && rc.canMove(directionToTarget)");
             return new Action(Action.ActionType.MOVE, directionToTarget);
         }
         // start wall-following
@@ -72,28 +79,29 @@ public class Bug2Navigator {
             hitDist = current.distanceSquaredTo(targetLoc);
             wallDir = directionToTarget;
             wallPosition = rc.getLocation().add(directionToTarget);
-            //System.out.println("!followingWall");
+            // System.out.println("!followingWall");
             return new Action(Action.ActionType.MOVE, followWall(rc));
         }
         // Bug2 exit condition: back on M-line closer to goal
-        //System.out.println("current.distanceSquaredTo(targetLoc) " + current.distanceSquaredTo(targetLoc));
-        //System.out.println("hitDist " + hitDist);
+        // System.out.println("current.distanceSquaredTo(targetLoc) " +
+        // current.distanceSquaredTo(targetLoc));
+        // System.out.println("hitDist " + hitDist);
         if (onMLine(startLoc, targetLoc, current)
                 && current.distanceSquaredTo(targetLoc) <= hitDist
                 && rc.canMove(directionToTarget)) {
             followingWall = false;
             wallDir = Direction.CENTER;
             wallPosition = null;
-            //System.out.println("onMLine(startLoc, goal, current)");
+            // System.out.println("onMLine(startLoc, goal, current)");
             return new Action(Action.ActionType.MOVE, directionToTarget);
         }
         // following wall
         Direction move = followWall(rc);
-        if (move == Direction.CENTER){
-            //System.out.println("move == Direction.CENTER");
+        if (move == Direction.CENTER) {
+            // System.out.println("move == Direction.CENTER");
             return new Action(Action.ActionType.TURN, rc.getDirection().rotateLeft());
         }
-        //System.out.println("Action.ActionType.MOVE, mova " + move);
+        // System.out.println("Action.ActionType.MOVE, mova " + move);
         return new Action(Action.ActionType.MOVE, move);
     }
 
@@ -104,7 +112,7 @@ public class Bug2Navigator {
             if (rc.canMove(d)) {
                 wallDir = d.rotateRight(); // keep wall on right
                 wallPosition = rc.getLocation().add(wallDir);
-                //System.out.println("followWall " + wallDir);
+                // System.out.println("followWall " + wallDir);
                 return d;
             }
             d = d.rotateLeft();
@@ -114,8 +122,8 @@ public class Bug2Navigator {
 
     // ===== M-line Check =====
     private boolean onMLine(MapLocation start, MapLocation goal, MapLocation cur) {
-        //System.out.println("start goal, cur");
-        //System.out.println(start + " " + goal + " " + cur);
+        // System.out.println("start goal, cur");
+        // System.out.println(start + " " + goal + " " + cur);
         int dx1 = goal.x - start.x;
         int dy1 = goal.y - start.y;
         int dx2 = cur.x - start.x;
@@ -126,14 +134,14 @@ public class Bug2Navigator {
 
     private Direction findAnyRemovableDirt(RobotController rc) throws GameActionException {
         Direction[] directions;
-        if (rc.getType() == UnitType.BABY_RAT){
-            directions = new Direction[]{
+        if (rc.getType() == UnitType.BABY_RAT) {
+            directions = new Direction[] {
                     rc.getDirection(),
                     rc.getDirection().rotateLeft(),
                     rc.getDirection().rotateRight()
             };
-        }else{
-            directions = new Direction[]{
+        } else {
+            directions = new Direction[] {
                     rc.getDirection(),
                     rc.getDirection().rotateLeft(),
                     rc.getDirection().rotateLeft().rotateLeft(),
@@ -146,12 +154,15 @@ public class Bug2Navigator {
         }
         for (Direction dir : directions) {
             MapLocation loc = rc.getLocation().add(dir);
-            if (loc.x < 0 || loc.y < 0 || loc.x >= rc.getMapWidth() || loc.y >= rc.getMapHeight()) continue;
-            //System.out.println("loc" + loc);
-            if (rc.senseMapInfo(loc).isDirt()) return dir;
+            if (loc.x < 0 || loc.y < 0 || loc.x >= rc.getMapWidth() || loc.y >= rc.getMapHeight())
+                continue;
+            // System.out.println("loc" + loc);
+            if (rc.senseMapInfo(loc).isDirt())
+                return dir;
         }
         return Direction.CENTER;
     }
+
     public void reset() {
         followingWall = false;
         hitDist = 0;

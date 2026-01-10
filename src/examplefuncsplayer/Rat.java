@@ -7,6 +7,7 @@ public abstract class Rat {
     protected int turnCount = 0;
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
+
     protected enum StaticTileTypes {
         DIRT,
         FREE,
@@ -19,31 +20,31 @@ public abstract class Rat {
     public abstract void run(RobotController rc);
 
     public static void executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
-        Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
-        //System.out.println("action " + action.type + " " + action.dir);
+        Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, false);
+        // System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
             case MOVE:
                 if (rc.canMove(action.dir)) {
                     rc.turn(action.dir);
                     rc.moveForward();
                 }
-                waitTime=0;
+                waitTime = 0;
                 break;
             case TURN:
                 if (rc.canTurn(action.dir)) {
                     rc.turn(action.dir);
                 }
-                waitTime=0;
+                waitTime = 0;
                 break;
             case DELETE_DIRT:
                 if (rc.canRemoveDirt(rc.getLocation().add(action.dir))) {
                     rc.removeDirt(rc.getLocation().add(action.dir));
                 }
-                waitTime=0;
+                waitTime = 0;
                 break;
             case WAIT, OCCUPIED, FINISHED:
                 waitTime++;
-                if (waitTime > 3){
+                if (waitTime > 3) {
                     nav.reset();
                 }
                 break;

@@ -50,13 +50,13 @@ public class ChildRat extends Rat {
         if (mineLocation != null) {
             target = mineLocation;
         }
-        MapLocation cheeseLocation = findNearestCheese(rc);
-        if (cheeseLocation != null) {
-            target = cheeseLocation;
-        }
         MapLocation runLocation = runAwayFromOtherRats(rc);
         if (runLocation != null) {
             target = runLocation;
+        }
+        MapLocation cheeseLocation = findNearestCheese(rc);
+        if (cheeseLocation != null) {
+            target = cheeseLocation;
         }
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
