@@ -7,6 +7,7 @@ import java.util.Random;
 
 public class ChildRat extends Rat {
 
+    static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
 
@@ -21,6 +22,22 @@ public class ChildRat extends Rat {
             }
             updateMemoryMap(rc);
             ratKingLocation = findNearestRatKing(rc);
+            senseNearbyCats(rc);
+            senseNearbyMouses(rc);
+            if (rc.canBecomeRatKing()) {
+                rc.becomeRatKing();
+            }
+            if (nearestEnemyMouseLocation != null && rc.canAttack(nearestEnemyMouseLocation)) {
+                rc.attack(nearestEnemyMouseLocation, rc.getRawCheese());
+            }
+            if(nearestCatLocation != null){
+                if(rc.canPlaceCatTrap(rc.getLocation().add(rc.getLocation().directionTo(nearestCatLocation)))){
+                    rc.placeCatTrap(rc.getLocation().add(rc.getLocation().directionTo(nearestCatLocation)));
+                }
+                if(rc.canAttack(nearestCatLocation)){
+                    rc.attack(nearestCatLocation, rc.getRawCheese());
+                }
+            }
             handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
             moveToTarget(rc, targetLocation);
@@ -48,6 +65,12 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
+        if (rc.getRawCheese() > 50){
+            return ratKingLocation;
+        }
+        if (mineLocation != null) {
+            target = mineLocation;
+        }
         MapLocation mineLocation = findNearestStaticTileType(rc, StaticTileTypes.MINE);
         if (mineLocation != null && rc.getRawCheese() < 20) {
             target = mineLocation;
@@ -72,7 +95,7 @@ public class ChildRat extends Rat {
         if (target != null && rc.getRawCheese() != 0) {
             target = ratKingLocation;
         }
-        if (target == null) {
+        if (target == null || rc.getLocation().equals(target)) {
             target = runToRandomLocation(rc);
         }
         return target;
@@ -83,10 +106,29 @@ public class ChildRat extends Rat {
         int mapHeight = rc.getMapHeight();
         int randX = rng.nextInt(mapWidth);
         int randY = rng.nextInt(mapHeight);
-        System.out.println("randX " + randX + "randY" + randY);
+        //System.out.println("randX " + randX + "randY" + randY);
         return new MapLocation(randX, randY);
     }
 
+    public MapLocation runAwayFromOtherRats(RobotController rc) {
+        MapLocation myLocation = rc.getLocation();
+        MapLocation nearestLocation = null;
+        int minDistance = 10;
+        for (RobotInfo rat : rc.senseNearbyRobots()) {
+            if (rat.getTeam() != rc.getTeam()) continue;
+            int distance = myLocation.distanceSquaredTo(rat.getLocation());
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestLocation = rat.getLocation();
+            }
+        }
+        if (nearestLocation != null) {
+            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
+            // System.out.print("Running away to " + furthestLocation);
+            return furthestLocation;
+        }
+        return null;
+    }
     public MapLocation findNearestRatKing(RobotController rc) throws GameActionException {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestKing = null;
@@ -110,11 +152,14 @@ public class ChildRat extends Rat {
         return nearestKing;
     }
 
-    public MapLocation runAwayFromOtherRats(RobotController rc) {
+    public MapLocation runAwayFromRatKing(RobotController rc) {
         MapLocation myLocation = rc.getLocation();
         MapLocation nearestLocation = null;
         int minDistance = 10;
         for (RobotInfo rat : rc.senseNearbyRobots()) {
+            if (rat.getType() != UnitType.RAT_KING && rat.team != rc.getTeam()) {
+                continue;
+            }
             int distance = myLocation.distanceSquaredTo(rat.getLocation());
             if (distance < minDistance) {
                 minDistance = distance;
@@ -133,7 +178,7 @@ public class ChildRat extends Rat {
         int myY = rc.getLocation().y;
 
         int minDistance = Integer.MAX_VALUE;
-        int radius = 5;
+        int radius = 4;
         MapLocation nearestTileType = null;
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();

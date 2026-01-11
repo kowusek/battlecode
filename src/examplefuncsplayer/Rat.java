@@ -1,15 +1,19 @@
 package examplefuncsplayer;
 
-import battlecode.common.*;
-
+import java.lang.reflect.Type;
 import java.util.Random;
 
+import battlecode.common.*;
+
 public abstract class Rat {
+
     protected static Bug2Navigator nav = new Bug2Navigator();
     protected int turnCount = 0;
     protected static Random rng = null;
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
+    protected static MapLocation nearestCatLocation = null;
+    protected static MapLocation nearestEnemyMouseLocation = null;
     static MapLocation targetLocation = null;
     static int actionsInOneTurn = 0;
     protected enum StaticTileTypes {
@@ -25,26 +29,26 @@ public abstract class Rat {
 
     public static Bug2Navigator.Action executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
         Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
-        System.out.println("action " + action.type + " " + action.dir);
+        //System.out.println("action " + action.type + " " + action.dir);
         switch (action.type) {
             case MOVE:
                 if (rc.canMove(action.dir)) {
                     rc.turn(action.dir);
                     rc.moveForward();
                 }
-                waitTime=0;
+                waitTime = 0;
                 break;
             case TURN:
                 if (rc.canTurn(action.dir)) {
                     rc.turn(action.dir);
                 }
-                waitTime=0;
+                waitTime = 0;
                 break;
             case DELETE_DIRT:
                 if (rc.canRemoveDirt(rc.getLocation().add(action.dir))) {
                     rc.removeDirt(rc.getLocation().add(action.dir));
                 }
-                waitTime=0;
+                waitTime = 0;
                 break;
             case WAIT, OCCUPIED, FINISHED:
                 waitTime++;
@@ -94,5 +98,30 @@ public abstract class Rat {
             nextLocation = furthestLocation.add(awayDir);
         }
         return furthestLocation;
+    }
+
+    public void senseNearbyCats(RobotController rc) throws GameActionException {
+        boolean seenCat = false;
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            if (robot.type == UnitType.CAT) {
+                nearestCatLocation = robot.getLocation();
+                seenCat = true;
+            }
+        }
+        if (!seenCat) {
+            nearestCatLocation = null;
+        }
+    }
+    public void senseNearbyMouses(RobotController rc) throws GameActionException {
+        boolean seenCat = false;
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            if (robot.type != UnitType.CAT && robot.getTeam() != rc.getTeam()) {
+                nearestEnemyMouseLocation = robot.getLocation();
+                seenCat = true;
+            }
+        }
+        if (!seenCat) {
+            nearestEnemyMouseLocation = null;
+        }
     }
 }
