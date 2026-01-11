@@ -2,8 +2,10 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
+import java.util.Random;
+
 public class KingRat extends Rat {
-    protected int desiredRatCost = 20;
+    protected int desiredRatCost = 40;
     static MapLocation targetLocation = null;
     static int mySharedArrayOffset = -1;
     
@@ -21,11 +23,16 @@ public class KingRat extends Rat {
     @Override
     public void run(RobotController rc) {
         try {
+            if (rng == null){
+                rng = new Random(rc.getID());
+            }
             writeLocationToSharedArray(rc, rc.getLocation());
             senseNearbyCats(rc);
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);
+            //System.out.println("targetLocation "+ targetLocation);
             if (targetLocation != null) {
+                System.out.println("moveToTarget");
                 moveToTarget(rc, targetLocation);
             }
             // System.out.println("cheese" + rc.getAllCheese() + "turn " + turnCount);
@@ -92,7 +99,9 @@ public class KingRat extends Rat {
     public MapLocation determineTargetLocation(RobotController rc) {
         MapLocation target = targetLocation;
         MapLocation runLocation = runAwayFromCats(rc);
-        target = runLocation;
+        if( runLocation != null){
+            target = runLocation;
+        }
         return target;
     }
 
