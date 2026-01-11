@@ -10,6 +10,7 @@ public class ChildRat extends Rat {
     static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
+    List<MapLocation> mineLocations = new ArrayList<>();
 
     @Override
     public void run(RobotController rc) {
@@ -65,8 +66,11 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
-        if (rc.getRawCheese() > 50){
+        if (rc.getRawCheese() > 40){
             return ratKingLocation;
+        }
+        if(rc.getGlobalCheese() < 100 && !mineLocations.isEmpty()){
+            return getTheClosestMine(rc);
         }
         if (mineLocation != null) {
             target = mineLocation;
@@ -99,6 +103,19 @@ public class ChildRat extends Rat {
             target = runToRandomLocation(rc);
         }
         return target;
+    }
+
+    private MapLocation getTheClosestMine(RobotController rc) {
+        int minDistance = Integer.MAX_VALUE;
+        MapLocation nearestMine = null;
+        for (MapLocation mine: mineLocations){
+            int dist = mine.distanceSquaredTo(rc.getLocation());
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearestMine = mine;
+            }
+        }
+        return nearestMine;
     }
 
     public static MapLocation runToRandomLocation(RobotController rc) {
@@ -216,6 +233,7 @@ public class ChildRat extends Rat {
             }
             else if (info.hasCheeseMine()){
                 memoryMap[x][y] = StaticTileTypes.MINE.ordinal();
+                mineLocations.add(new MapLocation(x, y));
             }
             else if (info.getCheeseAmount()> 0){
                 memoryMap[x][y] = StaticTileTypes.CHEESE.ordinal();
