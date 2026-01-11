@@ -5,9 +5,20 @@ import battlecode.common.*;
 import java.util.Random;
 
 public class KingRat extends Rat {
-    protected int toBuild = 9999;
+    protected int desiredRatCost = 40;
     static MapLocation targetLocation = null;
     static int mySharedArrayOffset = -1;
+    
+    static final Direction[] directions = {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.EAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHWEST,
+            Direction.WEST,
+            Direction.NORTHWEST,
+    };
 
     @Override
     public void run(RobotController rc) {
@@ -16,9 +27,12 @@ public class KingRat extends Rat {
                 rng = new Random(rc.getID());
             }
             writeLocationToSharedArray(rc, rc.getLocation());
+            senseNearbyCats(rc);
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);
+            //System.out.println("targetLocation "+ targetLocation);
             if (targetLocation != null) {
+                System.out.println("moveToTarget");
                 moveToTarget(rc, targetLocation);
             }
             // System.out.println("cheese" + rc.getAllCheese() + "turn " + turnCount);
@@ -34,12 +48,28 @@ public class KingRat extends Rat {
     }
 
     public void buildRat(RobotController rc) throws GameActionException {
-        MapLocation buildLocation = rc.getLocation().add(Direction.NORTH).add(Direction.NORTH);
-        //System.out.println("outside " + buildLocation + " "+ rc.canBuildRat(buildLocation) );
-        if (toBuild > 0 && rc.canBuildRat(buildLocation)) {
-            //System.out.println("inside");
-            rc.buildRat(buildLocation);
-            toBuild--;
+        if (rc.getCurrentRatCost() > desiredRatCost) {
+            return;
+        }
+        
+        // King is 3x3, so we need to spawn rats around the perimeter
+        // Try all directions in random order
+        Direction[] shuffledDirections = directions.clone();
+        for (int i = shuffledDirections.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+            Direction temp = shuffledDirections[i];
+            shuffledDirections[i] = shuffledDirections[j];
+            shuffledDirections[j] = temp;
+        }
+        
+        MapLocation kingCenter = rc.getLocation();
+        for (Direction dir : shuffledDirections) {
+            // Move 2 tiles in the direction to get outside the 3x3 area
+            MapLocation buildLocation = kingCenter.add(dir).add(dir);
+            if (rc.canBuildRat(buildLocation)) {
+                rc.buildRat(buildLocation);
+                return;
+            }
         }
     }
 
@@ -69,32 +99,15 @@ public class KingRat extends Rat {
     public MapLocation determineTargetLocation(RobotController rc) {
         MapLocation target = targetLocation;
         MapLocation runLocation = runAwayFromCats(rc);
-        if (runLocation != null) {
+        if( runLocation != null){
             target = runLocation;
         }
-
         return target;
     }
 
     public MapLocation runAwayFromCats(RobotController rc) {
-        MapLocation myLocation = rc.getLocation();
-        MapLocation nearestLocation = null;
-        int minDistance = 100000;
-
-        for (RobotInfo robot : rc.senseNearbyRobots()) {
-            if (robot.type != UnitType.CAT) {
-                continue;
-            }
-            int distance = myLocation.distanceSquaredTo(robot.getLocation());
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestLocation = robot.getLocation();
-            }
-        }
-
-        if (nearestLocation != null) {
-            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
-            System.out.print("Running away to " + furthestLocation);
+        if (nearestCatLocation != null) {
+            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestCatLocation);
             return furthestLocation;
         }
         return null;
