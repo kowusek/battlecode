@@ -13,7 +13,8 @@ public class ChildRat extends Rat {
     List<MapLocation> mineLocations = new ArrayList<>();
 
     @Override
-    public void run(RobotController rc) {
+		// Zwraca czy zmienić stan
+    public boolean run(RobotController rc) {
         try {
             if (rng == null){
                 rng = new Random(rc.getID());
@@ -27,6 +28,7 @@ public class ChildRat extends Rat {
             senseNearbyMouses(rc);
             if (rc.canBecomeRatKing()) {
                 rc.becomeRatKing();
+								return true;
             }
             if (nearestEnemyMouseLocation != null && rc.canAttack(nearestEnemyMouseLocation)) {
                 rc.attack(nearestEnemyMouseLocation, rc.getRawCheese());
@@ -49,10 +51,8 @@ public class ChildRat extends Rat {
         } catch (Exception e) {
             System.out.println("Exception");
             e.printStackTrace();
-        } finally {
-            Clock.yield();
         }
-
+				return false;
     }
 
     public void handleCheeseLogic(RobotController rc) throws GameActionException {
@@ -83,7 +83,7 @@ public class ChildRat extends Rat {
         if (cheeseLocation != null && rc.getRawCheese() < 20) {
             target = cheeseLocation;
         }
-        MapLocation runLocation = runAwayFromOtherRats(rc);
+        MapLocation runLocation = null; //runAwayFromOtherRats(rc);
         if (runLocation != null) {
             Direction away = rc.getLocation().directionTo(runLocation);
             Direction[] candidates = {

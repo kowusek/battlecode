@@ -23,7 +23,7 @@ public class KingRat extends Rat {
     };
 
     @Override
-    public void run(RobotController rc) {
+    public boolean run(RobotController rc) {
         try {
             if (rng == null){
                 rng = new Random(rc.getID());
@@ -44,9 +44,8 @@ public class KingRat extends Rat {
         } catch (Exception e) {
             System.out.println("Exception");
             e.printStackTrace();
-        } finally {
-            Clock.yield();
         }
+				return false;
     }
 
     public void buildRat(RobotController rc) throws GameActionException {
@@ -124,6 +123,7 @@ public class KingRat extends Rat {
 						catLocation = robot.getLocation();
 						directionX += myLocation.x - catLocation.x;
 						directionY += myLocation.y - catLocation.y;
+						System.out.print("Direction after finding a cat: " + directionX + " " + directionY);
 						foundCat = true;
         }
 				if (!foundCat) {

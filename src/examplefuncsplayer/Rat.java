@@ -25,7 +25,7 @@ public abstract class Rat {
         MINE,
     }
 
-    public abstract void run(RobotController rc);
+    public abstract boolean run(RobotController rc);
 
     public static Bug2Navigator.Action executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
         Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
