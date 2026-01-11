@@ -78,25 +78,36 @@ public class KingRat extends Rat {
 
     public MapLocation runAwayFromCats(RobotController rc) {
         MapLocation myLocation = rc.getLocation();
-        MapLocation nearestLocation = null;
-        int minDistance = 100000;
+        MapLocation catLocation = null;
+				MapLocation directionVector = new MapLocation(0, 0);
+				bool foundCat = false;
 
+				// Find direction where there are no seen cats
         for (RobotInfo robot : rc.senseNearbyRobots()) {
             if (robot.type != UnitType.CAT) {
                 continue;
             }
-            int distance = myLocation.distanceSquaredTo(robot.getLocation());
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestLocation = robot.getLocation();
-            }
+						
+						catLocation = robot.getLocation();
+						directionVector.add(myLocation.substract(catLocation));
+						foundCat = true;
         }
-
-        if (nearestLocation != null) {
-            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestLocation);
-            System.out.print("Running away to " + furthestLocation);
-            return furthestLocation;
-        }
-        return null;
+				if (!foundCat) {
+					return null;
+				}
+				
+				// Take correction on nearby walls
+				// Niech nie biegie cioł zupełnie w ścianę
+				if (directionVector.x == 0) {
+						// TODO
+				}
+				if (directionVector.y == 0) {
+						// TODO
+				}
+				
+				// TODO Limit directionVector to map size
+				
+				System.out.print("Running away to " + directionVector);
+        return directionVector;
     }
 }
