@@ -65,20 +65,20 @@ public abstract class Rat {
     }
 
     public void moveToTarget(RobotController rc, MapLocation target) throws GameActionException {
-        while (!rc.getLocation().equals(target)) {
+				// FIXME: This may be a while for more movement
+        if (!rc.getLocation().equals(target)) {
             if (!rc.isMovementReady() || !rc.isActionReady()) {
-                break;
+                return;
             }
             Bug2Navigator.Action action = executeMovement(rc, target);
-            if (action.type == Bug2Navigator.Action.ActionType.DELETE_DIRT){
+            if (action.type == Bug2Navigator.Action.ActionType.DELETE_DIRT) {
                 actionsInOneTurn++;
-                if(actionsInOneTurn>2){
+                if (actionsInOneTurn > 2) {
                     actionsInOneTurn = 0;
-                    break;
                 }
             }
         }
-        if(rc.getLocation().equals(target)){
+        if (rc.getLocation().equals(target)) {
             targetLocation = null;
         }
     }

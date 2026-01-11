@@ -109,54 +109,31 @@ public class KingRat extends Rat {
     }
 
     public MapLocation runAwayFromCats(RobotController rc) {
-        double fleeX = 0;
-        double fleeY = 0;
-        int maxX = rc.getMapWidth();
-        int maxY = rc.getMapHeight();
-        int currentX = rc.getLocation().x;
-        int currentY = rc.getLocation().y;
-        List<MapLocation> catLocations = new ArrayList<>();
-        // Find direction where there are no seen cats
+        MapLocation myLocation = rc.getLocation();
+        MapLocation catLocation = null;
+				int directionX = 0;
+				int directionY = 0;
+				boolean foundCat = false;
+
+				// Find direction where there are no seen cats
         for (RobotInfo robot : rc.senseNearbyRobots()) {
             if (robot.type != UnitType.CAT) {
                 continue;
             }
-            catLocations.add(robot.getLocation());
+						
+						catLocation = robot.getLocation();
+						directionX += myLocation.x - catLocation.x;
+						directionY += myLocation.y - catLocation.y;
+						foundCat = true;
         }
-        if (catLocations.isEmpty()){
-            return null;
-        }
-        for (MapLocation catLocation : catLocations) {
-            double dx = currentX - catLocation.x;
-            double dy = currentY - catLocation.y;
-
-            double distance = Math.sqrt(dx * dx + dy * dy);
-
-            // Weight closer dangers more strongly
-            double weight = 1.0 / distance;
-
-            fleeX += dx * weight;
-            fleeY += dy * weight;
-        }
-        // 2. Border expulsion
-        double borderStrength = 1.0;
-
-        // Left border (x = 0)
-        double distLeft = Math.max(currentX, 0.1);
-        fleeX += borderStrength / distLeft;
-
-        // Right border (x = maxX)
-        double distRight = Math.max(maxX - currentX, 0.1);
-        fleeX -= borderStrength / distRight;
-
-        // Bottom border (y = 0)
-        double distBottom = Math.max(currentY, 0.1);
-        fleeY += borderStrength / distBottom;
-
-        // Top border (y = maxY)
-        double distTop = Math.max(maxY - currentY, 0.1);
-        fleeY -= borderStrength / distTop;
-        double length = Math.sqrt(fleeX * fleeX + fleeY * fleeY);
-        return new MapLocation((int) (fleeX/length), (int) (fleeY/length));
+				if (!foundCat) {
+						return null;
+				}
+				
+				int locX = directionX + myLocation.x;
+				int locY = directionY + myLocation.y;
+				
+				System.out.print("Running away to " + locX + " " + locY);
+        return new MapLocation(locX, locY);
     }
 }
