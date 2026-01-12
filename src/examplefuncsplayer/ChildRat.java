@@ -10,9 +10,11 @@ public class ChildRat extends Rat {
     static MapLocation targetLocation = null;
     static MapLocation ratKingLocation = null;
     static MapLocation mineLocation = null;
+    List<MapLocation> mineLocations = new ArrayList<>();
 
     @Override
-    public void run(RobotController rc) {
+		// Zwraca czy zmienić stan
+    public boolean run(RobotController rc) {
         try {
             if (rng == null){
                 rng = new Random(rc.getID());
@@ -23,11 +25,21 @@ public class ChildRat extends Rat {
             updateMemoryMap(rc);
             ratKingLocation = findNearestRatKing(rc);
             senseNearbyCats(rc);
+            senseNearbyMouses(rc);
             if (rc.canBecomeRatKing()) {
                 rc.becomeRatKing();
+								return true;
             }
-            if (nearestCatLocation != null && rc.canAttack(nearestCatLocation)) {
-                rc.attack(nearestCatLocation);
+            if (nearestEnemyMouseLocation != null && rc.canAttack(nearestEnemyMouseLocation)) {
+                rc.attack(nearestEnemyMouseLocation, rc.getRawCheese());
+            }
+            if(nearestCatLocation != null){
+                if(rc.canPlaceCatTrap(rc.getLocation().add(rc.getLocation().directionTo(nearestCatLocation)))){
+                    rc.placeCatTrap(rc.getLocation().add(rc.getLocation().directionTo(nearestCatLocation)));
+                }
+                if(rc.canAttack(nearestCatLocation)){
+                    rc.attack(nearestCatLocation, rc.getRawCheese());
+                }
             }
             handleCheeseLogic(rc);
             targetLocation = determineTargetLocation(rc);
@@ -39,10 +51,8 @@ public class ChildRat extends Rat {
         } catch (Exception e) {
             System.out.println("Exception");
             e.printStackTrace();
-        } finally {
-            Clock.yield();
         }
-
+				return false;
     }
 
     public void handleCheeseLogic(RobotController rc) throws GameActionException {
@@ -56,6 +66,12 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
+        if (rc.getRawCheese() > 40){
+            return ratKingLocation;
+        }
+        if(rc.getGlobalCheese() < 100 && !mineLocations.isEmpty()){
+            return getTheClosestMine(rc);
+        }
         if (mineLocation != null) {
             target = mineLocation;
         }
@@ -67,7 +83,7 @@ public class ChildRat extends Rat {
         if (cheeseLocation != null && rc.getRawCheese() < 20) {
             target = cheeseLocation;
         }
-        MapLocation runLocation = runAwayFromOtherRats(rc);
+        MapLocation runLocation = null; //runAwayFromOtherRats(rc);
         if (runLocation != null) {
             Direction away = rc.getLocation().directionTo(runLocation);
             Direction[] candidates = {
@@ -89,6 +105,19 @@ public class ChildRat extends Rat {
         return target;
     }
 
+    private MapLocation getTheClosestMine(RobotController rc) {
+        int minDistance = Integer.MAX_VALUE;
+        MapLocation nearestMine = null;
+        for (MapLocation mine: mineLocations){
+            int dist = mine.distanceSquaredTo(rc.getLocation());
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearestMine = mine;
+            }
+        }
+        return nearestMine;
+    }
+
     public static MapLocation runToRandomLocation(RobotController rc) {
         int mapWidth = rc.getMapWidth();
         int mapHeight = rc.getMapHeight();
@@ -103,6 +132,7 @@ public class ChildRat extends Rat {
         MapLocation nearestLocation = null;
         int minDistance = 10;
         for (RobotInfo rat : rc.senseNearbyRobots()) {
+            if (rat.getTeam() != rc.getTeam()) continue;
             int distance = myLocation.distanceSquaredTo(rat.getLocation());
             if (distance < minDistance) {
                 minDistance = distance;
@@ -165,7 +195,7 @@ public class ChildRat extends Rat {
         int myY = rc.getLocation().y;
 
         int minDistance = Integer.MAX_VALUE;
-        int radius = 5;
+        int radius = 4;
         MapLocation nearestTileType = null;
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -203,6 +233,7 @@ public class ChildRat extends Rat {
             }
             else if (info.hasCheeseMine()){
                 memoryMap[x][y] = StaticTileTypes.MINE.ordinal();
+                mineLocations.add(new MapLocation(x, y));
             }
             else if (info.getCheeseAmount()> 0){
                 memoryMap[x][y] = StaticTileTypes.CHEESE.ordinal();

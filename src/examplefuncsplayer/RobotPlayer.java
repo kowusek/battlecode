@@ -18,7 +18,15 @@ public class RobotPlayer {
             }
         }
         while (true) {
-            myRat.run(rc);
+            if (myRat.run(rc)) {
+							if (rc.getType() == UnitType.RAT_KING) {
+									myRat = new KingRat();
+							} else {
+									myRat = new ChildRat();
+							}
+						}
+						
+						Clock.yield();
         }
     }
 }

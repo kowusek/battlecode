@@ -2,6 +2,8 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class KingRat extends Rat {
@@ -21,18 +23,18 @@ public class KingRat extends Rat {
     };
 
     @Override
-    public void run(RobotController rc) {
+    public boolean run(RobotController rc) {
         try {
             if (rng == null){
                 rng = new Random(rc.getID());
             }
             writeLocationToSharedArray(rc, rc.getLocation());
-            senseNearbyCats(rc);
+            //senseNearbyCats(rc);
             buildRat(rc);
             targetLocation = determineTargetLocation(rc);
             //System.out.println("targetLocation "+ targetLocation);
             if (targetLocation != null) {
-                System.out.println("moveToTarget");
+                System.out.println("moveToTarget " + targetLocation);
                 moveToTarget(rc, targetLocation);
             }
             // System.out.println("cheese" + rc.getAllCheese() + "turn " + turnCount);
@@ -42,9 +44,8 @@ public class KingRat extends Rat {
         } catch (Exception e) {
             System.out.println("Exception");
             e.printStackTrace();
-        } finally {
-            Clock.yield();
         }
+				return false;
     }
 
     public void buildRat(RobotController rc) throws GameActionException {
@@ -100,16 +101,39 @@ public class KingRat extends Rat {
         MapLocation target = targetLocation;
         MapLocation runLocation = runAwayFromCats(rc);
         if( runLocation != null){
+            System.out.println("runAwayFromCats runLocation " + runLocation);
             target = runLocation;
         }
         return target;
     }
 
     public MapLocation runAwayFromCats(RobotController rc) {
-        if (nearestCatLocation != null) {
-            MapLocation furthestLocation = findFurthestLocationAwayFrom(rc, nearestCatLocation);
-            return furthestLocation;
+        MapLocation myLocation = rc.getLocation();
+        MapLocation catLocation = null;
+				int directionX = 0;
+				int directionY = 0;
+				boolean foundCat = false;
+
+				// Find direction where there are no seen cats
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            if (robot.type != UnitType.CAT) {
+                continue;
+            }
+						
+						catLocation = robot.getLocation();
+						directionX += myLocation.x - catLocation.x;
+						directionY += myLocation.y - catLocation.y;
+						System.out.print("Direction after finding a cat: " + directionX + " " + directionY);
+						foundCat = true;
         }
-        return null;
+				if (!foundCat) {
+						return null;
+				}
+				
+				int locX = directionX + myLocation.x;
+				int locY = directionY + myLocation.y;
+				
+				System.out.print("Running away to " + locX + " " + locY);
+        return new MapLocation(locX, locY);
     }
 }

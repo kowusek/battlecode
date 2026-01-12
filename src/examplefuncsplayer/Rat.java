@@ -1,5 +1,6 @@
 package examplefuncsplayer;
 
+import java.lang.reflect.Type;
 import java.util.Random;
 
 import battlecode.common.*;
@@ -12,6 +13,7 @@ public abstract class Rat {
     protected int[][] memoryMap = null;
     protected static int waitTime = 0;
     protected static MapLocation nearestCatLocation = null;
+    protected static MapLocation nearestEnemyMouseLocation = null;
     static MapLocation targetLocation = null;
     static int actionsInOneTurn = 0;
     protected enum StaticTileTypes {
@@ -23,7 +25,7 @@ public abstract class Rat {
         MINE,
     }
 
-    public abstract void run(RobotController rc);
+    public abstract boolean run(RobotController rc);
 
     public static Bug2Navigator.Action executeMovement(RobotController rc, MapLocation targetLocation) throws GameActionException {
         Bug2Navigator.Action action = nav.nextAction(rc, rc.getLocation(), targetLocation, true);
@@ -63,20 +65,20 @@ public abstract class Rat {
     }
 
     public void moveToTarget(RobotController rc, MapLocation target) throws GameActionException {
-        while (!rc.getLocation().equals(target)) {
+				// FIXME: This may be a while for more movement
+        if (!rc.getLocation().equals(target)) {
             if (!rc.isMovementReady() || !rc.isActionReady()) {
-                break;
+                return;
             }
             Bug2Navigator.Action action = executeMovement(rc, target);
-            if (action.type == Bug2Navigator.Action.ActionType.DELETE_DIRT){
+            if (action.type == Bug2Navigator.Action.ActionType.DELETE_DIRT) {
                 actionsInOneTurn++;
-                if(actionsInOneTurn>2){
+                if (actionsInOneTurn > 2) {
                     actionsInOneTurn = 0;
-                    break;
                 }
             }
         }
-        if(rc.getLocation().equals(target)){
+        if (rc.getLocation().equals(target)) {
             targetLocation = null;
         }
     }
@@ -108,6 +110,18 @@ public abstract class Rat {
         }
         if (!seenCat) {
             nearestCatLocation = null;
+        }
+    }
+    public void senseNearbyMouses(RobotController rc) throws GameActionException {
+        boolean seenCat = false;
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            if (robot.type != UnitType.CAT && robot.getTeam() != rc.getTeam()) {
+                nearestEnemyMouseLocation = robot.getLocation();
+                seenCat = true;
+            }
+        }
+        if (!seenCat) {
+            nearestEnemyMouseLocation = null;
         }
     }
 }
