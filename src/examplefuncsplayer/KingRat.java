@@ -52,6 +52,10 @@ public class KingRat extends Rat {
         if (rc.getCurrentRatCost() > desiredRatCost) {
             return;
         }
+				
+				if (rc.getGlobalCheese() < 500 && rng.nextInt(100) > 30) {
+						return;
+				}
         
         // King is 3x3, so we need to spawn rats around the perimeter
         // Try all directions in random order
