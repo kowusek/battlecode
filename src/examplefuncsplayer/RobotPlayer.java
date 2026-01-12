@@ -11,9 +11,9 @@ public class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         rc.getType();
         if (myRat == null){
-            if (rc.getType() == UnitType.RAT_KING){
+            if (rc.getType() == UnitType.RAT_KING) {
                 myRat = new KingRat();
-            }else{
+            } else {
                 myRat = new ChildRat();
             }
         }
