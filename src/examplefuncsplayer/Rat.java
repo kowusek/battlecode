@@ -113,14 +113,14 @@ public abstract class Rat {
         }
     }
     public void senseNearbyMouses(RobotController rc) throws GameActionException {
-        boolean seenCat = false;
+        boolean seenMouse = false;
         for (RobotInfo robot : rc.senseNearbyRobots()) {
             if (robot.type != UnitType.CAT && robot.getTeam() != rc.getTeam()) {
                 nearestEnemyMouseLocation = robot.getLocation();
-                seenCat = true;
+                seenMouse = true;
             }
         }
-        if (!seenCat) {
+        if (!seenMouse) {
             nearestEnemyMouseLocation = null;
         }
     }

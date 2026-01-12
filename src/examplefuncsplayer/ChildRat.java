@@ -27,17 +27,19 @@ public class ChildRat extends Rat {
             senseNearbyCats(rc);
             senseNearbyMouses(rc);
             if (rc.canBecomeRatKing()) {
-                rc.becomeRatKing();
-								return true;
+                // rc.becomeRatKing();
+								// return true;
             }
             if (nearestEnemyMouseLocation != null && rc.canAttack(nearestEnemyMouseLocation)) {
+								System.out.println("Attak!");
                 rc.attack(nearestEnemyMouseLocation, rc.getRawCheese());
             }
-            if(nearestCatLocation != null){
+            if (nearestCatLocation != null) {
                 if(rc.canPlaceCatTrap(rc.getLocation().add(rc.getLocation().directionTo(nearestCatLocation)))){
                     rc.placeCatTrap(rc.getLocation().add(rc.getLocation().directionTo(nearestCatLocation)));
                 }
                 if(rc.canAttack(nearestCatLocation)){
+										System.out.println("Attak cat!");
                     rc.attack(nearestCatLocation, rc.getRawCheese());
                 }
             }
@@ -66,41 +68,37 @@ public class ChildRat extends Rat {
 
     public MapLocation determineTargetLocation(RobotController rc) throws GameActionException {
         MapLocation target = targetLocation;
-        if (rc.getRawCheese() > 40){
+				
+				// Jak mam ser to wracam
+        if (rc.getRawCheese() >= 40){
             return ratKingLocation;
         }
-        if(rc.getGlobalCheese() < 100 && !mineLocations.isEmpty()){
-            return getTheClosestMine(rc);
+				
+				// WPP jak potrzebujemy bardzo sera to szukam z okolicznych kopalni
+        if (rc.getGlobalCheese() < 1000 && !mineLocations.isEmpty() && !(
+							target != null && target.x >= 0 && target.x < rc.getMapWidth() &&
+																target.y >= 0 && target.y < rc.getMapHeight() &&
+							this.memoryMap[target.x][target.y] == StaticTileTypes.CHEESE.ordinal())) {
+						MapLocation mine = getTheClosestMine(rc);
+						if (!rc.getLocation().isWithinDistanceSquared(mine, 36)) {
+								return mine;
+						}
         }
-        if (mineLocation != null) {
-            target = mineLocation;
-        }
-        MapLocation mineLocation = findNearestStaticTileType(rc, StaticTileTypes.MINE);
-        if (mineLocation != null && rc.getRawCheese() < 20) {
-            target = mineLocation;
-        }
+
+				/// WPP Jak widzę ser to do niego idę
         MapLocation cheeseLocation = findNearestStaticTileType(rc, StaticTileTypes.CHEESE);
         if (cheeseLocation != null && rc.getRawCheese() < 20) {
-            target = cheeseLocation;
+						return cheeseLocation;
         }
-        MapLocation runLocation = null; //runAwayFromOtherRats(rc);
+				
+				/// WPP odchodzę od innych szczurów
+        MapLocation runLocation = runAwayFromOtherRats(rc);
         if (runLocation != null) {
-            Direction away = rc.getLocation().directionTo(runLocation);
-            Direction[] candidates = {
-                    away,
-                    away.rotateLeft(),
-                    away.rotateRight(),
-                    away.rotateLeft().rotateLeft(),
-                    away.rotateRight().rotateRight()
-            };
-            Direction chosen = candidates[rng.nextInt(candidates.length)];
-            target = rc.getLocation().add(chosen);
+						// TODO Random roaming
+            return runAwayFromKings(rc);
         }
-        if (target != null && rc.getRawCheese() != 0) {
-            target = ratKingLocation;
-        }
-        if (target == null || rc.getLocation().equals(target)) {
-            target = runToRandomLocation(rc);
+        if (target == null || rc.getLocation().isWithinDistanceSquared(target, 4)) {
+            return runAwayFromKings(rc);
         }
         return target;
     }
@@ -117,6 +115,33 @@ public class ChildRat extends Rat {
         }
         return nearestMine;
     }
+
+		protected static MapLocation runAwayFromKings(RobotController rc) throws GameActionException{
+				int mapWidth = rc.getMapWidth();
+				int mapHeight = rc.getMapHeight();
+				int i = 0;
+				int sumX = 0;
+				int sumY = 0;
+				while (true) {
+						int kingX = rc.readSharedArray(i);
+						if (kingX == 0) {
+								break;
+						}
+						int kingY = rc.readSharedArray(i + 1);
+						sumX += (mapWidth - kingX);
+						sumY += (mapHeight - kingY);
+						i += 2;
+				}
+        int randX = rng.nextInt(mapWidth);
+        int randY = rng.nextInt(mapHeight);
+				if (rng.nextInt(2) == 1) {
+						randX = rng.nextInt(10) + (sumX / (i / 2)) - 5;
+				} else {
+						randY = rng.nextInt(10) + (sumY / (i / 2)) - 5;
+				}
+				
+				return new MapLocation(randX, randY);
+		}
 
     public static MapLocation runToRandomLocation(RobotController rc) {
         int mapWidth = rc.getMapWidth();
